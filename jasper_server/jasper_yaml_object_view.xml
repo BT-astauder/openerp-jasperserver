@@ -1,0 +1,54 @@
+<openerp>
+    <data>
+
+        <record id="view_jasper_yaml_object_form" model="ir.ui.view">
+            <field name="name">view_jasper_yaml_object_form</field>
+            <field name="model">jasper.yaml_object</field>
+            <field name="arch" type="xml">
+                <form string="Jasper YAML Object" version="7.0">
+
+                    <header></header>
+                    <sheet>
+
+                         <div class="oe_title">
+                            <div class="oe_edit_only">
+                                <label for="name"/>
+                            </div>
+                            <h1><field name="name"/></h1>
+                            <div class="oe_edit_only">
+                                <label for="type"/>
+                            </div>
+                            <h1><field name="type"/></h1>
+                        </div>
+
+                        <group attrs="{'invisible': [('type','!=','yaml')]}">
+                            <group>
+                                <field name="model" attrs="{'required': [('type','=','yaml')]}"/>
+                                <field name="domain" />
+                                <field name="offset" />
+                            </group>
+                            <group>
+                                <field name="limit" />
+                                <field name="order" />
+                            </group>
+                        </group>
+
+                        <group attrs="{'invisible': [('type','!=','sxw')]}">
+                            <group>
+                                <field name="ir_actions_report_xml_id" attrs="{'required': [('type','=','sxw')]}"/>
+                                <!--
+                                <field name="report_sxw_name" attrs="{'required': [('type','=','sxw')]}"/>
+                                <field name="report_sxw_table" attrs="{'required': [('type','=','sxw')]}"/>
+                                <field name="report_sxw_rml" attrs="{'required': [('type','=','sxw')]}"/>
+                                <field name="report_sxw_parser" attrs="{'required': [('type','=','sxw')]}"/>
+                                <field name="report_swx_header" attrs="{'required': [('type','=','sxw')]}"/>
+                                -->
+                            </group>
+                        </group>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
+</openerp>
