@@ -225,6 +225,9 @@ class Report(object):
         if ids is None:
             ids = []
 
+        doc_obj = self.pool.get('jasper.document')
+        js_obj = self.pool.get('jasper.server')
+
         cur_obj = self.model_obj.browse(self.cr, self.uid, ex, context=context)
         aname = False
         if self.attrs['attachment']:
@@ -344,8 +347,18 @@ class Report(object):
                 else:
                     d_par[p.name] = p.code
 
-            self.outputFormat = current_document.format
+            # If YAML we must compose it
+            if self.attrs['params'][2] == 'yaml':
+                d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=context)
+                if current_document.debug:
+                    return (d_xml, 1)
+                d_par['xml_data'] = d_xml
+
+            self.outputFormat = current_document.format.lower()
             special_dict = {
+                'TIME_ZONE': 'UTC',
+                'REPORT_DATE_FORMAT': "dd_MM_yyyy",
+                'XML_DATE_PATTERN': 'yyyy-MM-dd HH:mm:ss',
                 'REPORT_LOCALE': language or 'en_US',
                 'IS_JASPERSERVER': 'yes',
             }
@@ -414,7 +427,12 @@ class Report(object):
         # For each IDS, launch a query, and return only one result
         #
         pdf_list = []
-        doc_ids = self.doc_obj.search(self.cr, self.uid, [('id', '=', self.service)], context=context)
+        if self.service:
+            try:
+                service_id = int(self.service)
+                doc_ids = self.doc_obj.search(self.cr, self.uid, [('id', '=', self.service)], context=context)
+            except ValueError:
+                doc_ids = self.doc_obj.search(self.cr, self.uid, [('report_name', '=', self.service)], context=context)
         if not doc_ids:
             raise JasperException(_('Configuration Error'),
                                   _("Service name doesn't match!"))
@@ -467,7 +485,7 @@ class Report(object):
 
         def find_pdf_attachment(pdfname, current_obj):
             """
-            Evaluate the pdfname, and return it as a fiel object
+            Evaluate the pdfname, and return it as a field object
             """
             if not pdfname:
                 return None
@@ -489,9 +507,9 @@ class Report(object):
             return None
 
         # If We must add begin and end file in the current PDF
-        cur_obj = self.model_obj.browse(self.cr, self.uid, ex, context=context)
-        pdf_fo_begin = find_pdf_attachment(doc.pdf_begin, cur_obj)
-        pdf_fo_ended = find_pdf_attachment(doc.pdf_ended, cur_obj)
+#        cur_obj = self.model_obj.browse(self.cr, self.uid, ex, context=context)
+#        pdf_fo_begin = find_pdf_attachment(doc.pdf_begin, cur_obj)
+#        pdf_fo_ended = find_pdf_attachment(doc.pdf_ended, cur_obj)
 
         ##
         ## We use pyPdf to merge all PDF in unique file
@@ -534,9 +552,10 @@ class Report(object):
             os.remove(f)
 
         # If covers, we merge PDF
-        fo_merge = merge_pdf([pdf_fo_begin, c, pdf_fo_ended])
-        content = fo_merge.getvalue()
-        fo_merge.close()
+#        fo_merge = merge_pdf([pdf_fo_begin, c, pdf_fo_ended])
+        # fo_merge = merge_pdf([c])
+        content = c # fo_merge.getvalue()
+        # fo_merge.close()
 
         if not c.closed:
             c.close()

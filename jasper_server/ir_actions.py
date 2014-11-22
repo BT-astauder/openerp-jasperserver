@@ -25,6 +25,9 @@
 from openerp.osv import osv
 from jasper_server.common import registered_report
 import logging
+import importlib
+from openerp.report import report_sxw
+
 
 _logger = logging.getLogger(__name__)
 
@@ -42,6 +45,25 @@ class IrActionReport(osv.Model):
         for record in records:
             registered_report(record['report_name'])
         _logger.info('====[END REGISTER JASPER REPORT]====================')
+
+        _logger.info('====[REGISTER RML REPORT FOR JASPER REPORT]========================')
+        # cursor.execute("SELECT id, report_name FROM jasper_yaml_object WHERE report_type = 'jrml'")
+        # records = cursor.dictfetchall()
+        # for record in records:
+
+
+#        parser_module = importlib.import_module('account.report.account_general_ledger')
+#        parser_class = getattr(parser_module, 'general_ledger')
+
+        # from account.report.account_general_ledger import general_ledger
+#        report_sxw.report_sxw('report.account.general.ledger_landscape2',
+#                                   'account.account',
+#                                   'addons/account/report/account_general_ledger_landscape.rml',
+#                                   parser=parser_class,
+#                                   header='internal landscape')
+
+        _logger.info('====[END REGISTER RML REPORT FOR JASPER REPORT]====================')
+
         return True
 
 

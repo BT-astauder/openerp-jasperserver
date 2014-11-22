@@ -32,6 +32,7 @@ import os
 import jasperlib
 
 from lxml.etree import Element, tostring
+from openerp.addons.jasper_server.report.report_exception import EvalError
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -302,6 +303,117 @@ class JasperServer(orm.Model):
                     log_error('OUPS un oubli %s: %s(%s)' % (field, name, type))
                 x.append(e)
         return x
+
+    def generatorYAML(self, cr, uid, jasper_document, current_object, user_company, user, context=None):
+
+        import yaml, re
+        root = Element('data')
+        for yaml_object in jasper_document.yaml_object_ids:
+
+            if yaml_object.type == 'yaml':
+
+                model_obj = self.pool.get(yaml_object.model.model)
+                model_ids = model_obj.search(cr, uid,
+                                             args   = eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
+                                             offset = yaml_object.offset,
+                                             limit  = yaml_object.limit if yaml_object.limit > 0 else None,
+                                             order  = yaml_object.order,
+                                             context= context)
+
+                xmlField = Element('object')
+                xmlField.set("name", yaml_object.name)
+                xmlField.set("model", yaml_object.model.name)
+                for object in model_obj.browse(cr, uid, model_ids, context):
+                    self.generate_from_yaml(cr, uid, xmlField, object, yaml.load(yaml_object.fields), context=context)
+
+                root.append(xmlField)
+
+            elif yaml_object.type == 'sxw':
+
+                report = self.pool.get('ir.actions.report.xml').browse(cr, uid, yaml_object.ir_actions_report_xml_id, context=context)
+                srv = netsvc.Service._services[yaml_object.ir_actions_report_xml_id.report_name]
+
+                mydata['report_type'] = 'raw'
+                mycontext = context.copy()
+                (result, format) = srv.create(cr, uid, ids, mydata, mycontext)
+                root.append(result)
+#                ctx = node.context.context.copy()
+#                ctx.update(node.dctx)
+#                pdf,pdftype = srv.create(cr, uid, [node.act_id,], {}, context=ctx)
+
+
+        return tostring(root, pretty_print=context.get('indent', False))
+
+
+    def generate_from_yaml(self, cr, uid, root, object, fields, prefix='', context=None):
+        """
+        Generate xml for an object recursively
+        """
+
+        if prefix:
+            prefix = prefix + '_'
+
+        for field in fields:
+            xmlField = Element("DummyInitialisation")
+
+            if type(field) is dict:
+                fieldname = field.keys()[0]
+                value = field.values()[0]
+                xmlField = Element(prefix + fieldname)
+
+                if type(value) is list:
+                    if isinstance(object[fieldname], list):
+                        for objectListElement in object[fieldname]:
+                            xmlContainerField = Element("container")
+                            xmlContainerField.set("name", fieldname)
+                            self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
+                            xmlField.append(xmlContainerField)
+                    else:
+                        self.generate_from_yaml(cr, uid, xmlField, object[fieldname], value, prefix + fieldname, context=context)
+                else:
+                    # set element content
+                    xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[fieldname])
+
+            else:
+                xmlField = Element(prefix + field)
+
+                # set element content
+                xmlField.text = ''
+                if object:
+                    xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[field])
+
+            root.append(xmlField)
+        return
+
+    def _format_element(self, element, field_type, field_value):
+
+        if field_type in ('char', 'text', 'selection'):
+            return field_value and unicode(field_value) or ''
+        elif field_type == 'integer':
+            return field_value and str(field_value) or '0'
+        elif field_type == 'float':
+            return field_value and str(field_value) or '0.0'
+        elif field_type == 'date':
+            element.set('format', 'yyyy-MM-dd HH:mm:ss')
+            if field_value:
+                return field_value + ' 00:00:00' or ''
+            else:
+                return ''
+        elif field_type == 'datetime':
+            element.set('format', 'yyyy-MM-dd HH:mm:ss')
+            return field_value or ''
+        elif field_type == 'boolean':
+            return str(field_value)
+        elif field_type == 'many2one':
+            raise EvalError(_('Many2One'), _('You cannot use many2one directly.\n\nDefine subelement for: "%s"') % str(element.tag))
+        elif field_type in ('binary', 'reference'):
+            if field_value:
+                return str(field_value)
+            else:
+                return ''
+        else:
+            log_error('OUPS un oubli %s: %s(%s)' % (field, field_name, field_type))
+
 
     def generator(self, cr, uid, model, id, depth, context=None):
         root = Element('data')

@@ -80,7 +80,7 @@ class jasper_document(orm.Model):
         'format_choice': fields.selection([('mono', 'Single Format'), ('multi', 'Multi Format')], 'Format Choice', required=True),
         'format': fields.selection(_get_formats, 'Formats'),
         'report_unit': fields.char('Report Unit', size=128, help='Enter the name for report unit in Jasper Server'),
-        'mode': fields.selection([('sql', 'SQL'), ('xml', 'XML'), ('multi', 'Multiple Report')], 'Mode', required=True),
+        'mode': fields.selection([('sql', 'SQL'), ('xml', 'XML'), ('multi', 'Multiple Report'), ('yaml', 'YAML')], 'Mode', required=True),
         'before': fields.text('Before', help='This field must be filled with a valid SQL request and will be executed BEFORE the report edition',),
         'after': fields.text('After', help='This field must be filled with a valid SQL request and will be executed AFTER the report edition',),
         'attachment': fields.char('Save As Attachment Prefix', size=255, help='This is the filename of the attachment used to store the printing result. Keep empty to not save the printed reports. You can use a python expression with the object and time variables.'),
@@ -102,7 +102,14 @@ class jasper_document(orm.Model):
         'label_ids': fields.one2many('jasper.document.label', 'document_id', 'Labels'),
         'pdf_begin': fields.char('PDF at begin', size=128, help='Name of the PDF file store as attachment to add at the first page (page number not recompute)'),
         'pdf_ended': fields.char('PDF at end', size=128, help='Name of the PDF file store as attachment to add at the last page (page number not recompute)'),
+
+        # yaml fields
+        'yaml_object_ids': fields.one2many('jasper.yaml_object', 'jasper_document_id', string='YAML Object'),
+        'report_name':fields.char("Report Name", help="ir.actions.report.xml will be name with this field prefixed with 'jasper.report_'. The name must be unique"),
+        'debug': fields.boolean('Debug'),
     }
+
+    _sql_constraints = [('unique_number', 'unique(report_link_name)','The Report Link Name must be unique.')]
 
     _defaults = {
         'format_choice': 'mono',
@@ -133,11 +140,14 @@ class jasper_document(orm.Model):
         act_report_obj = self.pool.get('ir.actions.report.xml')
 
         doc = self.browse(cr, uid, id, context=context)
+        report_name = 'jasper.report_%d' % (doc.id,)
+        if doc.report_name:
+            report_name = 'jasper.report_%s' % (doc.report_name,)
         if doc.report_id:
             _logger.info('Update "%s" service' % doc.name)
             args = {
                 'name': doc.name,
-                'report_name': 'jasper.report_%d' % (doc.id,),
+                'report_name': report_name,
                 'model': doc.model_id.model,
                 'groups_id': [(6, 0, [x.id for x in doc.group_ids])],
                 'header': False,
@@ -148,7 +158,7 @@ class jasper_document(orm.Model):
             _logger.info('Create "%s" service' % doc.name)
             args = {
                 'name': doc.name,
-                'report_name': 'jasper.report_%d' % (doc.id,),
+                'report_name': report_name,
                 'model': doc.model_id.model,
                 'report_type': 'jasper',
                 'groups_id': [(6, 0, [x.id for x in doc.group_ids])],
@@ -159,7 +169,7 @@ class jasper_document(orm.Model):
             cr.execute("""UPDATE jasper_document SET report_id=%s WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
             self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
-        registered_report('jasper.report_%d' % (doc.id,))
+        registered_report(report_name)
 
     def action_values(self, cr, uid, report_id, context=None):
         """

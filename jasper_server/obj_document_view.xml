@@ -207,13 +207,15 @@
                         <notebook colspan="4">
                             <page string="General">
                                 <group colspan="4" col="4">
-                                    <field name="model_id" domain="[('osv_memory','=', False)]"/>
+                                    <field name="model_id"/>
                                     <field name="server_id"/>
                                     <field name="report_unit" attrs="{'required': [('mode','!=', 'multi')], 'readonly': [('mode','=', 'multi')]}"/>
                                     <newline/>
                                     <field name="jasper_file" colspan="4" attrs="{'required': [('mode','!=', 'multi')], 'readonly': [('mode','=', 'multi')]}"/>
                                     <field name="mode"/>
+                                    <field name="report_name"/>
                                     <field name="report_id"/>
+                                    <newline />
                                     <field name="ctx" colspan="4"/>
                                     <field name="only_one" attrs="{'readonly': [('mode','=', 'multi')]}"/>
                                     <newline/>
@@ -243,6 +245,16 @@
                             </page>
                             <page string="XML" attrs="{'invisible': [('mode','!=','xml')]}">
                                 <field name="depth"/>
+                            </page>
+                            <page string="YAML" attrs="{'invisible': [('mode','!=','yaml')]}">
+                                <group>
+                                    <field name="debug" />
+                                </group>
+                                <field name="yaml_object_ids" colspan="4">
+                                    <field name="name" />
+                                    <field name="model" />
+                                    <field name="domain" />
+                                </field>
                             </page>
                             <page string="SQL View" attrs="{'invisible': [('mode','!=','sql')]}">
                                 <separator string="Enter the name of the view" colspan="4"/>
