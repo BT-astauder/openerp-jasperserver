@@ -330,13 +330,27 @@ class JasperServer(orm.Model):
 
             elif yaml_object.type == 'sxw':
 
-                report = self.pool.get('ir.actions.report.xml').browse(cr, uid, yaml_object.ir_actions_report_xml_id, context=context)
-                srv = netsvc.Service._services[yaml_object.ir_actions_report_xml_id.report_name]
+                from openerp import netsvc
 
+#                report = self.pool.get('ir.actions.report.xml').browse(cr, uid, yaml_object.ir_actions_report_xml_id, context=context)
+                report = self.pool.get('ir.actions.report.xml').browse(cr, uid, 195, context=context)
+                serviceName = 'report.account.general.ledger_landscape'
+                srv = netsvc.Service._services[serviceName]
+
+                mydata = {u'model': u'ir.ui.menu',
+                          u'form': {u'initial_balance': False, u'chart_account_id': 33, u'date_from': False, u'period_to': False,
+                                    u'journal_ids': [17, 18, 14, 12, 15, 16, 11, 13, 19, 5, 6, 7, 4, 3, 8, 9, 1, 2, 10],
+                                    u'used_context': {u'lang': u'en_US', u'state': u'posted', u'chart_account_id': 33,
+                                                      u'journal_ids': [17, 18, 14, 12, 15, 16, 11, 13, 19, 5, 6, 7, 4, 3, 8, 9, 1, 2, 10],
+                                                      u'fiscalyear': 1},
+                                    u'filter': u'filter_no', u'period_from': False, u'fiscalyear_id': 1, u'periods': [], u'target_move': u'posted', u'date_to': False,
+                                    u'id': 31, u'amount_currency': True, u'display_account': u'movement', u'landscape': True, u'sortby': u'sort_date'}}
                 mydata['report_type'] = 'raw'
                 mycontext = context.copy()
-                (result, format) = srv.create(cr, uid, ids, mydata, mycontext)
-                root.append(result)
+                (result, format) = srv.create(cr, uid, [], mydata, mycontext)
+                print "Result: "
+                print result
+#                root.append(result)
 #                ctx = node.context.context.copy()
 #                ctx.update(node.dctx)
 #                pdf,pdftype = srv.create(cr, uid, [node.act_id,], {}, context=ctx)

@@ -477,6 +477,21 @@ class Report(object):
                 (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
                 one_check[doc.id] = True
 
+        swx = True
+        if swx:
+            if doc.mode == 'multi' and self.outputFormat == 'PDF':
+                for d in doc.child_ids:
+                    if d.only_one and one_check.get(d.id, False):
+                        continue
+                    self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
+                    (content, duplicate) = self._jasper_execute(0, d, js, pdf_list, reload, ids, context=self.context)
+                    one_check[d.id] = True
+            else:
+                if not (doc.only_one and one_check.get(doc.id, False)):
+                    (content, duplicate) = self._jasper_execute(0, doc, js, pdf_list, reload, ids, context=self.context)
+                    one_check[doc.id] = True
+
+
         # If format is not PDF, we return it directly
         # ONLY PDF CAN BE MERGE!
         if self.outputFormat != 'PDF':
