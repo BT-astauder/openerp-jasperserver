@@ -15,10 +15,6 @@
                                 <label for="name"/>
                             </div>
                             <h1><field name="name"/></h1>
-                            <div class="oe_edit_only">
-                                <label for="type"/>
-                            </div>
-                            <h1><field name="type"/></h1>
                         </div>
 
                         <group>
