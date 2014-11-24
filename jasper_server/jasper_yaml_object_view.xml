@@ -21,28 +21,15 @@
                             <h1><field name="type"/></h1>
                         </div>
 
-                        <group attrs="{'invisible': [('type','!=','yaml')]}">
+                        <group>
                             <group>
-                                <field name="model" attrs="{'required': [('type','=','yaml')]}"/>
+                                <field name="model"/>
                                 <field name="domain" />
                                 <field name="offset" />
                             </group>
                             <group>
                                 <field name="limit" />
                                 <field name="order" />
-                            </group>
-                        </group>
-
-                        <group attrs="{'invisible': [('type','!=','sxw')]}">
-                            <group>
-                                <field name="ir_actions_report_xml_id" attrs="{'required': [('type','=','sxw')]}"/>
-                                <!--
-                                <field name="report_sxw_name" attrs="{'required': [('type','=','sxw')]}"/>
-                                <field name="report_sxw_table" attrs="{'required': [('type','=','sxw')]}"/>
-                                <field name="report_sxw_rml" attrs="{'required': [('type','=','sxw')]}"/>
-                                <field name="report_sxw_parser" attrs="{'required': [('type','=','sxw')]}"/>
-                                <field name="report_swx_header" attrs="{'required': [('type','=','sxw')]}"/>
-                                -->
                             </group>
                         </group>
 

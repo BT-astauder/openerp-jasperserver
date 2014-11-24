@@ -22,11 +22,12 @@
 #
 ##############################################################################
 
-from openerp.osv import osv
+from openerp.osv import osv, fields
 from jasper_server.common import registered_report
 import logging
 import importlib
 from openerp.report import report_sxw
+import openerp.netsvc as netsvc
 
 
 _logger = logging.getLogger(__name__)
@@ -47,20 +48,26 @@ class IrActionReport(osv.Model):
         _logger.info('====[END REGISTER JASPER REPORT]====================')
 
         _logger.info('====[REGISTER RML REPORT FOR JASPER REPORT]========================')
-        # cursor.execute("SELECT id, report_name FROM jasper_yaml_object WHERE report_type = 'jrml'")
-        # records = cursor.dictfetchall()
-        # for record in records:
+        cursor.execute("""
+          SELECT ir_act_report_xml.id, ir_act_report_xml.report_name
+            FROM ir_act_report_xml, jasper_document
+            WHERE jasper_document.mode='rml'
+              AND jasper_document.rml_ir_actions_report_xml_id = ir_act_report_xml.id""")
+        records = cursor.dictfetchall()
+        for record in records:
 
+            gname = 'report.' + record['report_name']
+            if gname in netsvc.Service._services:
 
-#        parser_module = importlib.import_module('account.report.account_general_ledger')
-#        parser_class = getattr(parser_module, 'general_ledger')
+                # first rename the original report
+                gname_new = 'report.rml2jasper.' + record['report_name']
+                netsvc.Service._services[gname_new] = netsvc.Service._services[gname]
+                del netsvc.Service._services[gname]
 
-        # from account.report.account_general_ledger import general_ledger
-#        report_sxw.report_sxw('report.account.general.ledger_landscape2',
-#                                   'account.account',
-#                                   'addons/account/report/account_general_ledger_landscape.rml',
-#                                   parser=parser_class,
-#                                   header='internal landscape')
+                # register the new jasper report
+                registered_report(record['report_name'])
+                _logger.info('Register the jasper report service [%s]' % record['report_name'])
+
 
         _logger.info('====[END REGISTER RML REPORT FOR JASPER REPORT]====================')
 

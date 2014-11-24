@@ -36,6 +36,8 @@ from .common import parameter_dict, merge_pdf
 from report_exception import JasperException, AuthError, EvalError
 from pyPdf import PdfFileWriter, PdfFileReader
 from openerp.addons.jasper_server import jasperlib as jslib
+from openerp import netsvc
+
 
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
@@ -354,6 +356,19 @@ class Report(object):
                     return (d_xml, 1)
                 d_par['xml_data'] = d_xml
 
+            # If RML, call original report
+            if self.attrs['params'][2] == 'rml':
+                serviceName = 'report.rml2jasper.' + self.name[7:] # replace "report."
+                srv = netsvc.Service._services[serviceName]
+
+                mycontext = context.copy()
+                data = self.data.copy()
+                data['report_type'] = 'raw'
+                (result, format) = srv.create(self.cr, self.uid, self.ids, data, mycontext)
+                if current_document.debug:
+                    return (result, 1)
+                d_par['xml_data'] = result
+
             self.outputFormat = current_document.format.lower()
             special_dict = {
                 'TIME_ZONE': 'UTC',
@@ -432,13 +447,16 @@ class Report(object):
                 service_id = int(self.service)
                 doc_ids = self.doc_obj.search(self.cr, self.uid, [('id', '=', self.service)], context=context)
             except ValueError:
-                doc_ids = self.doc_obj.search(self.cr, self.uid, [('report_name', '=', self.service)], context=context)
+                report_name = self.service[7:] # remove "report."
+                doc_ids = self.doc_obj.search(self.cr, self.uid, [('rml_ir_actions_report_xml_name', '=', report_name)], context=context)
         if not doc_ids:
             raise JasperException(_('Configuration Error'),
                                   _("Service name doesn't match!"))
 
         doc = self.doc_obj.browse(self.cr, self.uid, doc_ids[0], context=context)
         self.outputFormat = doc.format
+        if doc.debug:
+            self.outputFormat = 'RTF'
         log_debug('Format: %s' % doc.format)
 
         if doc.server_id:
@@ -463,22 +481,23 @@ class Report(object):
         one_check[doc.id] = False
         content = ''
         duplicate = 1
-        for ex in ids:
-            if doc.mode == 'multi' and self.outputFormat == 'PDF':
-                for d in doc.child_ids:
-                    if d.only_one and one_check.get(d.id, False):
-                        continue
-                    self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
-                    one_check[d.id] = True
-            else:
-                if doc.only_one and one_check.get(doc.id, False):
-                    continue
-                (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
-                one_check[doc.id] = True
 
-        swx = True
-        if swx:
+        # in RML we maybe have no records, but data
+        if not doc.mode == 'rml':
+            for ex in ids:
+                if doc.mode == 'multi' and self.outputFormat == 'PDF':
+                    for d in doc.child_ids:
+                        if d.only_one and one_check.get(d.id, False):
+                            continue
+                        self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
+                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                        one_check[d.id] = True
+                else:
+                    if doc.only_one and one_check.get(doc.id, False):
+                        continue
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    one_check[doc.id] = True
+        else:
             if doc.mode == 'multi' and self.outputFormat == 'PDF':
                 for d in doc.child_ids:
                     if d.only_one and one_check.get(d.id, False):

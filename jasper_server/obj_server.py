@@ -310,50 +310,21 @@ class JasperServer(orm.Model):
         root = Element('data')
         for yaml_object in jasper_document.yaml_object_ids:
 
-            if yaml_object.type == 'yaml':
+            model_obj = self.pool.get(yaml_object.model.model)
+            model_ids = model_obj.search(cr, uid,
+                                         args   = eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
+                                         offset = yaml_object.offset,
+                                         limit  = yaml_object.limit if yaml_object.limit > 0 else None,
+                                         order  = yaml_object.order,
+                                         context= context)
 
-                model_obj = self.pool.get(yaml_object.model.model)
-                model_ids = model_obj.search(cr, uid,
-                                             args   = eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
-                                             offset = yaml_object.offset,
-                                             limit  = yaml_object.limit if yaml_object.limit > 0 else None,
-                                             order  = yaml_object.order,
-                                             context= context)
+            xmlField = Element('object')
+            xmlField.set("name", yaml_object.name)
+            xmlField.set("model", yaml_object.model.name)
+            for object in model_obj.browse(cr, uid, model_ids, context):
+                self.generate_from_yaml(cr, uid, xmlField, object, yaml.load(yaml_object.fields), context=context)
 
-                xmlField = Element('object')
-                xmlField.set("name", yaml_object.name)
-                xmlField.set("model", yaml_object.model.name)
-                for object in model_obj.browse(cr, uid, model_ids, context):
-                    self.generate_from_yaml(cr, uid, xmlField, object, yaml.load(yaml_object.fields), context=context)
-
-                root.append(xmlField)
-
-            elif yaml_object.type == 'sxw':
-
-                from openerp import netsvc
-
-#                report = self.pool.get('ir.actions.report.xml').browse(cr, uid, yaml_object.ir_actions_report_xml_id, context=context)
-                report = self.pool.get('ir.actions.report.xml').browse(cr, uid, 195, context=context)
-                serviceName = 'report.account.general.ledger_landscape'
-                srv = netsvc.Service._services[serviceName]
-
-                mydata = {u'model': u'ir.ui.menu',
-                          u'form': {u'initial_balance': False, u'chart_account_id': 33, u'date_from': False, u'period_to': False,
-                                    u'journal_ids': [17, 18, 14, 12, 15, 16, 11, 13, 19, 5, 6, 7, 4, 3, 8, 9, 1, 2, 10],
-                                    u'used_context': {u'lang': u'en_US', u'state': u'posted', u'chart_account_id': 33,
-                                                      u'journal_ids': [17, 18, 14, 12, 15, 16, 11, 13, 19, 5, 6, 7, 4, 3, 8, 9, 1, 2, 10],
-                                                      u'fiscalyear': 1},
-                                    u'filter': u'filter_no', u'period_from': False, u'fiscalyear_id': 1, u'periods': [], u'target_move': u'posted', u'date_to': False,
-                                    u'id': 31, u'amount_currency': True, u'display_account': u'movement', u'landscape': True, u'sortby': u'sort_date'}}
-                mydata['report_type'] = 'raw'
-                mycontext = context.copy()
-                (result, format) = srv.create(cr, uid, [], mydata, mycontext)
-                print "Result: "
-                print result
-#                root.append(result)
-#                ctx = node.context.context.copy()
-#                ctx.update(node.dctx)
-#                pdf,pdftype = srv.create(cr, uid, [node.act_id,], {}, context=ctx)
+            root.append(xmlField)
 
 
         return tostring(root, pretty_print=context.get('indent', False))
@@ -426,7 +397,7 @@ class JasperServer(orm.Model):
             else:
                 return ''
         else:
-            log_error('OUPS un oubli %s: %s(%s)' % (field, field_name, field_type))
+            log_error('OUPS un oubli %s: %s(%s)' % (field_type, element, field_value))
 
 
     def generator(self, cr, uid, model, id, depth, context=None):

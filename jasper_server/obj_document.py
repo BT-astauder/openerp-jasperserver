@@ -80,7 +80,7 @@ class jasper_document(orm.Model):
         'format_choice': fields.selection([('mono', 'Single Format'), ('multi', 'Multi Format')], 'Format Choice', required=True),
         'format': fields.selection(_get_formats, 'Formats'),
         'report_unit': fields.char('Report Unit', size=128, help='Enter the name for report unit in Jasper Server'),
-        'mode': fields.selection([('sql', 'SQL'), ('xml', 'XML'), ('multi', 'Multiple Report'), ('yaml', 'YAML')], 'Mode', required=True),
+        'mode': fields.selection([('sql', 'SQL'), ('xml', 'XML'), ('multi', 'Multiple Report'), ('yaml', 'YAML'), ('rml', 'RML')], 'Mode', required=True),
         'before': fields.text('Before', help='This field must be filled with a valid SQL request and will be executed BEFORE the report edition',),
         'after': fields.text('After', help='This field must be filled with a valid SQL request and will be executed AFTER the report edition',),
         'attachment': fields.char('Save As Attachment Prefix', size=255, help='This is the filename of the attachment used to store the printing result. Keep empty to not save the printed reports. You can use a python expression with the object and time variables.'),
@@ -107,6 +107,11 @@ class jasper_document(orm.Model):
         'yaml_object_ids': fields.one2many('jasper.yaml_object', 'jasper_document_id', string='YAML Object'),
         'report_name':fields.char("Report Name", help="ir.actions.report.xml will be name with this field prefixed with 'jasper.report_'. The name must be unique"),
         'debug': fields.boolean('Debug'),
+
+        # RML fields
+        'rml_ir_actions_report_xml_id': fields.many2one('ir.actions.report.xml', string='Report to generate RML'),
+        'rml_ir_actions_report_xml_name': fields.related('rml_ir_actions_report_xml_id', 'report_name', type="char", string='Report to generate RML'),
+
     }
 
     _sql_constraints = [('unique_number', 'unique(report_link_name)','The Report Link Name must be unique.')]
