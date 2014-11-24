@@ -224,6 +224,7 @@
                                     <separator string="Attachment" colspan="4"/>
                                     <field name="attachment" colspan="4"/>
                                     <field name="attachment_use"/>
+                                    <field name="debug" attr="{'invisible': [('mode','!=','yaml'),('mode','!=','rml')]"/>
                                 </group>
                             </page>
                             <page string="Groups">
@@ -247,9 +248,6 @@
                                 <field name="depth"/>
                             </page>
                             <page string="YAML" attrs="{'invisible': [('mode','!=','yaml')]}">
-                                <group>
-                                    <field name="debug" />
-                                </group>
                                 <field name="yaml_object_ids" colspan="4">
                                     <field name="name" />
                                     <field name="model" />

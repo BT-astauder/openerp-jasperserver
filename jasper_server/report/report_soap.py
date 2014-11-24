@@ -456,7 +456,7 @@ class Report(object):
         doc = self.doc_obj.browse(self.cr, self.uid, doc_ids[0], context=context)
         self.outputFormat = doc.format
         if doc.debug:
-            self.outputFormat = 'RTF'
+            self.outputFormat = 'XML'
         log_debug('Format: %s' % doc.format)
 
         if doc.server_id:
