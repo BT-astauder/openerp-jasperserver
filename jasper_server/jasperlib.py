@@ -37,6 +37,7 @@ KNOWN_FORMAT = [
     'JPRINT'
 ]
 
+
 ## Create some exception
 class JasperException(Exception):
     pass
@@ -61,8 +62,10 @@ class UnknownResponse(JasperException):
 class ServerError(JasperException):
     pass
 
+
 class UnknownFormat(JasperException):
     pass
+
 
 ## Create some XML element to resourceDescriptor
 class Request(etree.ElementBase):
@@ -210,7 +213,7 @@ class Jasper(object):
         """
         Launch a runReport in Jasper
         """
-        if output not in KNOWN_FORMAT:
+        if output.upper() not in KNOWN_FORMAT:
             raise UnknownFormat(output)
 
         args = {

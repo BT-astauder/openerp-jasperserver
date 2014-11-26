@@ -30,7 +30,7 @@ import logging
 
 from openerp.report.render import render
 from openerp.tools.translate import _
-#from httplib2 import Http, ServerNotFoundError, HttpLib2Error
+# from httplib2 import Http, ServerNotFoundError, HttpLib2Error
 from parser import WriteContent, ParseResponse
 from .common import parameter_dict, merge_pdf
 from report_exception import JasperException, AuthError, EvalError
@@ -41,7 +41,7 @@ from openerp import netsvc
 
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
-##
+# #
 # If cStringIO is available, we use it
 try:
     from cStringIO import StringIO
@@ -58,14 +58,14 @@ class external_pdf(render):
     def _render(self):
         return self.content
 
-    def set_output_type(self, format):
+    def set_output_type(self, file_format):
         """
         Change the format of the file
 
         :param format: file format (eg: pdf)
         :type  format: str
         """
-        self.output_type = format
+        self.output_type = file_format
 
     def get_output_type(self,):
         """
@@ -227,6 +227,8 @@ class Report(object):
         if ids is None:
             ids = []
 
+        content = None
+
         doc_obj = self.pool.get('jasper.document')
         js_obj = self.pool.get('jasper.server')
 
@@ -358,7 +360,7 @@ class Report(object):
 
             # If RML, call original report
             if self.attrs['params'][2] == 'rml':
-                serviceName = 'report.rml2jasper.' + self.name[7:] # replace "report."
+                serviceName = 'report.rml2jasper.' + self.name[7:]  # replace "report."
                 srv = netsvc.Service._services[serviceName]
 
                 mycontext = context.copy()
@@ -393,9 +395,12 @@ class Report(object):
 
             par = parameter_dict(self.attrs, d_par, special_dict)
 
-            ###
-            ## Execute the before query if it available
-            ##
+            # add generated XML to the service input params
+            par['XML_DATA'] = d_par['xml_data']
+
+            # ##
+            # # Execute the before query if it available
+            # #
             if js_conf.get('before'):
                 self.cr.execute(js_conf['before'], {'id': ex})
 
@@ -411,19 +416,21 @@ class Report(object):
                 raise JasperException(_('Error'), _('Server not found !'))
             except jslib.AuthError:
                 raise JasperException(_('Error'), _('Autentification failed !'))
+            except Exception as e:
+                raise JasperException(_('Error'), e)
 
-            ###
-            ## Store the content in ir.attachment if ask
+            # ##
+            # # Store the content in ir.attachment if ask
             if aname:
                 self.add_attachment(ex, aname, content, mimetype=mimetype, context=self.context)
 
-            ###
-            ## Execute the before query if it available
-            ##
+            # ##
+            # # Execute the before query if it available
+            # #
             if js_conf.get('after'):
                 self.cr.execute(js_conf['after'], {'id': ex})
 
-            ## Update the number of print on object
+            # # Update the number of print on object
             fld = self.model_obj.fields_get(self.cr, self.uid)
             if 'number_of_print' in fld:
                 self.model_obj.write(self.cr, self.uid, [cur_obj.id], {'number_of_print': (getattr(cur_obj, 'number_of_print', None) or 0) + 1}, context=context)
@@ -438,17 +445,22 @@ class Report(object):
         log_debug('DATA:')
         log_debug('\n'.join(['%s: %s' % (x, self.data[x]) for x in self.data]))
 
-        ##
+        # #
         # For each IDS, launch a query, and return only one result
         #
         pdf_list = []
         if self.service:
             try:
                 service_id = int(self.service)
-                doc_ids = self.doc_obj.search(self.cr, self.uid, [('id', '=', self.service)], context=context)
+                doc_ids = self.doc_obj.search(self.cr, self.uid, [('id', '=', service_id)], context=context)
             except ValueError:
-                report_name = self.service[7:] # remove "report."
-                doc_ids = self.doc_obj.search(self.cr, self.uid, [('rml_ir_actions_report_xml_name', '=', report_name)], context=context)
+                report_name = self.service
+                report_str = self.service[0:7]
+                if report_str == "report.":
+                    report_name = self.service[7:]  # remove "report."
+                    doc_ids = self.doc_obj.search(self.cr, self.uid, [('rml_ir_actions_report_xml_name', '=', report_name)], context=context)
+
+                doc_ids = self.doc_obj.search(self.cr, self.uid, [('report_name', '=', report_name)], context=context)
         if not doc_ids:
             raise JasperException(_('Configuration Error'),
                                   _("Service name doesn't match!"))
@@ -468,6 +480,7 @@ class Report(object):
                                       _('No JasperServer configuration found!'))
 
         js = self.js_obj.read(self.cr, self.uid, js_ids[0], context=context)
+
         def compose_path(basename):
             return js['prefix'] and '/' + js['prefix'] + '/instances/%s/%s' or basename
 
@@ -510,10 +523,9 @@ class Report(object):
                     (content, duplicate) = self._jasper_execute(0, doc, js, pdf_list, reload, ids, context=self.context)
                     one_check[doc.id] = True
 
-
         # If format is not PDF, we return it directly
         # ONLY PDF CAN BE MERGE!
-        if self.outputFormat != 'PDF':
+        if self.outputFormat.upper() != 'PDF':
             self.obj = external_pdf(content, self.outputFormat)
             return (self.obj.content, self.outputFormat)
 
@@ -537,7 +549,7 @@ class Report(object):
             datas = StringIO()
             if att.datas:
                 datas.write(base64.decodestring(att.datas))
-                return datas
+                return datas.getvalue()
             return None
 
         # If We must add begin and end file in the current PDF
@@ -545,12 +557,12 @@ class Report(object):
 #        pdf_fo_begin = find_pdf_attachment(doc.pdf_begin, cur_obj)
 #        pdf_fo_ended = find_pdf_attachment(doc.pdf_ended, cur_obj)
 
-        ##
-        ## We use pyPdf to merge all PDF in unique file
-        ##
+        # #
+        # # We use pyPdf to merge all PDF in unique file
+        # #
         c = StringIO()
         if len(pdf_list) > 1 or duplicate > 1:
-            #content = ''
+            # content = ''
             tmp_content = PdfFileWriter()
 
             # We add all PDF file in a list of file pointer to close them
@@ -567,7 +579,7 @@ class Report(object):
                         tmp_content.addPage(tmp_pdf.getPage(page))
             else:
                 tmp_content.write(c)
-                #content = c.getvalue()
+                # content = c.getvalue()
 
             # It seem there is a bug on PyPDF if we close the "fp" file,
             # we cannot call tmp_content.write(c) We received
@@ -586,10 +598,12 @@ class Report(object):
             os.remove(f)
 
         # If covers, we merge PDF
-#        fo_merge = merge_pdf([pdf_fo_begin, c, pdf_fo_ended])
+        # fo_merge = merge_pdf([pdf_fo_begin, c, pdf_fo_ended])
         # fo_merge = merge_pdf([c])
-        content = c # fo_merge.getvalue()
+        # fo_merge.getvalue()
         # fo_merge.close()
+
+        content = c.getvalue()
 
         if not c.closed:
             c.close()

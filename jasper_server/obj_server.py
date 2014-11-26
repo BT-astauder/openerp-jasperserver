@@ -28,6 +28,7 @@ from openerp.tools import ustr, config
 from openerp.tools.translate import _
 from openerp.modules import get_module_path
 import openerp
+import time
 import os
 import jasperlib
 
@@ -226,7 +227,7 @@ class JasperServer(orm.Model):
         if not irm_ids:
             log_error('Model %s not found !' % relation)
 
-        ##
+        # #
         # We must ban many model
         #
         ban = (
@@ -237,7 +238,7 @@ class JasperServer(orm.Model):
             'ir.actions.url', 'ir.ui.view', 'ir.sequence',
         )
 
-        ##
+        # #
         # If generate_xml was called by a relation field, we must keep
         # the original filename
         ir_model = irm.read(cr, uid, irm_ids[0])
@@ -283,7 +284,7 @@ class JasperServer(orm.Model):
                 elif type == 'many2one':
                     if not isinstance(value, int):
                         value = value and value[0] or 0
-                    #log_error('Current: %r Old: %r' % (mod_fields[f]['relation'], relation))
+                    # log_error('Current: %r Old: %r' % (mod_fields[f]['relation'], relation))
                     if depth > 0 and value and mod_fields[f]['relation'] != old_relation and mod_fields[f]['relation'] not in ban:
                         e = self.generate_xml(cr, uid, mod_fields[f]['relation'], value, depth - 1, relation, field)
                     else:
@@ -306,17 +307,17 @@ class JasperServer(orm.Model):
 
     def generatorYAML(self, cr, uid, jasper_document, current_object, user_company, user, context=None):
 
-        import yaml, re
+        import yaml
         root = Element('data')
         for yaml_object in jasper_document.yaml_object_ids:
 
             model_obj = self.pool.get(yaml_object.model.model)
             model_ids = model_obj.search(cr, uid,
-                                         args   = eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
-                                         offset = yaml_object.offset,
-                                         limit  = yaml_object.limit if yaml_object.limit > 0 else None,
-                                         order  = yaml_object.order,
-                                         context= context)
+                                         args=eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
+                                         offset=yaml_object.offset,
+                                         limit=yaml_object.limit if yaml_object.limit > 0 else None,
+                                         order=yaml_object.order,
+                                         context=context)
 
             xmlField = Element('object')
             xmlField.set("name", yaml_object.name)
@@ -325,7 +326,6 @@ class JasperServer(orm.Model):
                 self.generate_from_yaml(cr, uid, xmlField, object, yaml.load(yaml_object.fields), context=context)
 
             root.append(xmlField)
-
 
         return tostring(root, pretty_print=context.get('indent', False))
 
@@ -398,7 +398,6 @@ class JasperServer(orm.Model):
                 return ''
         else:
             log_error('OUPS un oubli %s: %s(%s)' % (field_type, element, field_value))
-
 
     def generator(self, cr, uid, model, id, depth, context=None):
         root = Element('data')
