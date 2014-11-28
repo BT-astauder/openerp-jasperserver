@@ -449,6 +449,7 @@ class Report(object):
         # For each IDS, launch a query, and return only one result
         #
         pdf_list = []
+        doc_ids = []
         if self.service:
             try:
                 service_id = int(self.service)
@@ -459,9 +460,10 @@ class Report(object):
                 if report_str == "report.":
                     report_name = self.service[7:]  # remove "report."
                     doc_ids = self.doc_obj.search(self.cr, self.uid, [('rml_ir_actions_report_xml_name', '=', report_name)], context=context)
+                else:
+                    doc_ids = self.doc_obj.search(self.cr, self.uid, [('report_name', '=', report_name)], context=context)
 
-                doc_ids = self.doc_obj.search(self.cr, self.uid, [('report_name', '=', report_name)], context=context)
-        if not doc_ids:
+        if not doc_ids or len(doc_ids) == 0:
             raise JasperException(_('Configuration Error'),
                                   _("Service name doesn't match!"))
 
