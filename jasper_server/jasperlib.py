@@ -143,7 +143,7 @@ class Jasper(object):
         # We must simulate a request if we want to check the auth is correct
 
         # Generate a soap query to verify the authentification
-        rq = Request(operationName='list', locale='fr_FR')
+        rq = Request(operationName='list', locale='en_US')
         rq.append(RequestRD('folder', '', '/'))
         self.body = SoapEnv('list', etree.tostring(rq)).output()
         try:
@@ -192,7 +192,7 @@ class Jasper(object):
         if params is None:
             params = {}
 
-        rq = Request(operationName=operation, locale='fr_FR')
+        rq = Request(operationName=operation, locale='en_US')
         for k in arguments:
             rq.append(RequestArgument(name=k, value=arguments[k]))
 
@@ -204,7 +204,7 @@ class Jasper(object):
         # Add query parameters
         for k, v in params.items():
             p = etree.SubElement(rd, 'parameter', name=k)
-            p.text = str(v)
+            p.text = str(v).encode('ascii', 'xmlcharrefreplace')
 
         rq.append(rd)
         return etree.tostring(rq, pretty_print=True)
