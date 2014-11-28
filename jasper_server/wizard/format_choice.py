@@ -83,7 +83,10 @@ class format_choice(wizard.interface):
             'attachment': document.attachment,
             'attachment_use': document.attachment_use,
         }
-        uri = '/openerp/bases/%s/%s' % (cr.dbname, document.report_unit)
+        if document.any_database:
+            uri = '/openerp/bases/%s' % (document.report_unit)
+        else:
+            uri = '/openerp/bases/%s/%s' % (cr.dbname, document.report_unit)
         data['form']['params'] = (document.format, uri, document.mode,
                                   document.depth, option)
         data['form']['ids'] = data['ids']

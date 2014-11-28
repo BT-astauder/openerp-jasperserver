@@ -489,7 +489,10 @@ class Report(object):
         self.attrs['attachment'] = doc.attachment
         self.attrs['reload'] = doc.attachment_use
         if not self.attrs.get('params'):
-            uri = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, doc.report_unit)
+            if doc.any_database:
+                uri = compose_path('/openerp/bases/%s') % (doc.report_unit)
+            else:
+                uri = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, doc.report_unit)
             self.attrs['params'] = (doc.format, uri, doc.mode, doc.depth, {})
 
         one_check = {}
@@ -504,7 +507,10 @@ class Report(object):
                     for d in doc.child_ids:
                         if d.only_one and one_check.get(d.id, False):
                             continue
-                        self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
+                        if doc.any_database:
+                            self.path = compose_path('/openerp/bases/%s') % ( d.report_unit)
+                        else:
+                            self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
                         (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
                         one_check[d.id] = True
                 else:
@@ -517,7 +523,10 @@ class Report(object):
                 for d in doc.child_ids:
                     if d.only_one and one_check.get(d.id, False):
                         continue
-                    self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
+                    if doc.any_database:
+                        self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
+                    else:
+                        self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
                     (content, duplicate) = self._jasper_execute(0, d, js, pdf_list, reload, ids, context=self.context)
                     one_check[d.id] = True
             else:

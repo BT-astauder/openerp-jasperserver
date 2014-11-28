@@ -107,6 +107,7 @@ class jasper_document(orm.Model):
         'yaml_object_ids': fields.one2many('jasper.yaml_object', 'jasper_document_id', string='YAML Object'),
         'report_name':fields.char("Report Name", help="ir.actions.report.xml will be name with this field prefixed with 'jasper.report_'. The name must be unique"),
         'debug': fields.boolean('Debug'),
+        'any_database': fields.boolean('Available for any database'),
 
         # RML fields
         'rml_ir_actions_report_xml_id': fields.many2one('ir.actions.report.xml', string='Report to generate RML'),
@@ -330,7 +331,10 @@ class jasper_document(orm.Model):
         try:
             js = jasperlib.Jasper(jss.host, jss.port, jss.user, jss['pass'])
             js.auth()
-            uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname, curr.report_unit)
+            if curr.any_database:
+                uri = compose_path('/openerp/bases/%s') % ( curr.report_unit)
+            else:
+                uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname, curr.report_unit)
             envelop = js.run_report(uri=uri, output='PDF', params={})
             js.send(jasperlib.SoapEnv('runReport', envelop).output())
         except jasperlib.ServerNotFound:
