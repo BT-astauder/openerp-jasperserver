@@ -32,6 +32,8 @@ import time
 import os
 import jasperlib
 
+from osv.orm import browse_null
+
 from lxml.etree import Element, tostring
 from openerp.addons.jasper_server.report.report_exception import EvalError
 
@@ -352,9 +354,11 @@ class JasperServer(orm.Model):
                             xmlContainerField = Element("container")
                             xmlContainerField.set("name", fieldname)
                             self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
+                            
                             xmlField.append(xmlContainerField)
                     else:
-                        self.generate_from_yaml(cr, uid, xmlField, object[fieldname], value, prefix + fieldname, context=context)
+                        if not isinstance(object[fieldname], browse_null):
+                            self.generate_from_yaml(cr, uid, xmlField, object[fieldname], value, prefix + fieldname, context=context)
                 else:
                     # set element content
                     xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[fieldname])
