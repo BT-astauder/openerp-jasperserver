@@ -218,7 +218,7 @@ class Jasper(object):
 
         args = {
             'RUN_OUTPUT_FORMAT': output,
-            'PAGE': '0',
+            #'PAGE': '0',
         }
 
         return self.create_request(operation='runReport', wsType='reportUnit', uri=uri, arguments=args, params=params)
