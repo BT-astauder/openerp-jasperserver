@@ -414,7 +414,7 @@ class jasper_document_parameter(orm.Model):
         'name': fields.char('Name', size=32, help='Name of the jasper parameter, the prefix must be OERP_', required=True),
         'code': fields.char('Code', size=256, help='Enter the code to retrieve data', required=True),
         'enabled': fields.boolean('Enabled'),
-        'document_id': fields.many2one('jasper.document', 'Document', required=True),
+        'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
     }
 
     _defaults = {
