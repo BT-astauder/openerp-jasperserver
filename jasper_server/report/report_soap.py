@@ -246,6 +246,7 @@ class Report(object):
         language = context.get('lang', 'en_US')
         if current_document.lang:
             language = self._eval_lang(cur_obj, current_document)
+            language = language[0][0] 
 
         # Check if we can launch this reports
         # Test can be simple, or un a function
@@ -344,10 +345,24 @@ class Report(object):
                 'company_fax': cny.partner_id.fax or '',
                 'company_mail': cny.partner_id.email or '',
             })
-
+            
+            my_language = "" 
             for p in current_document.param_ids:
+                if p.name.lower() == "date_format":
+                    my_language_id = self.pool.get("res.lang").search(self.cr,self.uid,[("code","=",my_language)])
+                    if my_language_id:
+                        date_format = self.pool.get("res.lang").read(self.cr,self.uid,my_language_id,["date_format"])[0]['date_format']
+                    # Date format is changed because JasperSoft does not accept format based on %. It needs usual format for dates    
+                    date_format = date_format.replace("%d",'dd')
+                    date_format = date_format.replace("%m",'MM')
+                    date_format = date_format.replace("%Y",'YYYY')                    
+                    d_par[p.name.lower()] = date_format
+                    continue
+                 
                 if p.code and p.code.startswith('[['):
                     d_par[p.name.lower()] = eval(p.code.replace('[[', '').replace(']]', ''), {'o': cur_obj, 'c': cny, 't': time, 'u': user}) or ''
+                    if p.name.lower() == "language":
+                        my_language = d_par[p.name.lower()]
                 else:
                     d_par[p.name] = p.code
 
