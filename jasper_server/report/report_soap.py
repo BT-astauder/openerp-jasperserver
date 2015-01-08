@@ -411,7 +411,8 @@ class Report(object):
             par = parameter_dict(self.attrs, d_par, special_dict)
 
             # add generated XML to the service input params
-            par['XML_DATA'] = d_par['xml_data']
+            if 'xml_data' in d_par:
+                par['XML_DATA'] = d_par['xml_data']
 
             # ##
             # # Execute the before query if it available
