@@ -368,7 +368,11 @@ class Report(object):
 
             # If YAML we must compose it
             if self.attrs['params'][2] == 'yaml':
-                d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=context)
+                #Using language coming from the jasper document if exists 
+                my_context = context.copy()
+                my_context['lang'] = language
+                
+                d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
                 if current_document.debug:
                     return (d_xml, 1)
                 d_par['xml_data'] = d_xml
@@ -422,7 +426,7 @@ class Report(object):
 
             try:
                 js = jslib.Jasper(js_conf['host'], js_conf['port'], js_conf['user'], js_conf['pass'])
-                js.auth()
+                js.auth(language)
                 envelop = js.run_report(uri=self.path or self.attrs['params'][1], output=self.outputFormat, params=par)
                 response = js.send(jslib.SoapEnv('runReport', envelop).output())
                 content = response['data']

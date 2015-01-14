@@ -134,7 +134,7 @@ class Jasper(object):
         }
         self.body = ''
 
-    def auth(self,):
+    def auth(self,locale='en_US'):
         """
         Add credential
         """
@@ -143,7 +143,7 @@ class Jasper(object):
         # We must simulate a request if we want to check the auth is correct
 
         # Generate a soap query to verify the authentification
-        rq = Request(operationName='list', locale='en_US')
+        rq = Request(operationName='list', locale=locale)
         rq.append(RequestRD('folder', '', '/'))
         self.body = SoapEnv('list', etree.tostring(rq)).output()
         try:
@@ -191,8 +191,12 @@ class Jasper(object):
 
         if params is None:
             params = {}
+        
+        language = 'en_US'
+        if 'OERP_LANGUAGE' in params:
+            language = params['OERP_LANGUAGE']
 
-        rq = Request(operationName=operation, locale='en_US')
+        rq = Request(operationName=operation, locale=language)
         for k in arguments:
             rq.append(RequestArgument(name=k, value=arguments[k]))
 
