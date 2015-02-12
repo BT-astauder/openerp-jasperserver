@@ -352,11 +352,11 @@ class Report(object):
                     my_language_id = self.pool.get("res.lang").search(self.cr,self.uid,[("code","=",my_language)])
                     if my_language_id:
                         date_format = self.pool.get("res.lang").read(self.cr,self.uid,my_language_id,["date_format"])[0]['date_format']
-                    # Date format is changed because JasperSoft does not accept format based on %. It needs usual format for dates    
-                    date_format = date_format.replace("%d",'dd')
-                    date_format = date_format.replace("%m",'MM')
-                    date_format = date_format.replace("%Y",'YYYY')                    
-                    d_par[p.name.lower()] = date_format
+                        # Date format is changed because JasperSoft does not accept format based on %. It needs usual format for dates
+                        date_format = date_format.replace("%d",'dd')
+                        date_format = date_format.replace("%m",'MM')
+                        date_format = date_format.replace("%Y",'YYYY')
+                        d_par[p.name.lower()] = date_format
                     continue
                  
                 if p.code and p.code.startswith('[['):
