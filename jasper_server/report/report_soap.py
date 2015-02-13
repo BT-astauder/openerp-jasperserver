@@ -357,7 +357,8 @@ class Report(object):
                         date_format = date_format.replace("%m",'MM')
                         date_format = date_format.replace("%Y",'YYYY')
                         d_par[p.name.lower()] = date_format
-                    continue
+                        # do not execute the code when the date format comes from the language
+                        continue
                  
                 if p.code and p.code.startswith('[['):
                     d_par[p.name.lower()] = eval(p.code.replace('[[', '').replace(']]', ''), {'o': cur_obj, 'c': cny, 't': time, 'u': user}) or ''
