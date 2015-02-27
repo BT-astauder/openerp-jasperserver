@@ -243,6 +243,7 @@ class Report(object):
 
         log_debug('Number of duplicate copy: %d' % int(duplicate))
 
+        # If language is set in the jasper document we get it, otherwise language is by default American English 
         language = context.get('lang', 'en_US')
         if current_document.lang:
             language = self._eval_lang(cur_obj, current_document)
@@ -346,27 +347,24 @@ class Report(object):
                 'company_mail': cny.partner_id.email or '',
             })
             
-            my_language = "" 
+            # Parameters are evaluated
             for p in current_document.param_ids:
-                if p.name.lower() == "date_format":
-                    my_language_id = self.pool.get("res.lang").search(self.cr,self.uid,[("code","=",my_language)])
-                    if my_language_id:
-                        date_format = self.pool.get("res.lang").read(self.cr,self.uid,my_language_id,["date_format"])[0]['date_format']
-                        # Date format is changed because JasperSoft does not accept format based on %. It needs usual format for dates
-                        date_format = date_format.replace("%d",'dd')
-                        date_format = date_format.replace("%m",'MM')
-                        date_format = date_format.replace("%Y",'YYYY')
-                        d_par[p.name.lower()] = date_format
-                        # do not execute the code when the date format comes from the language
-                        continue
-                 
                 if p.code and p.code.startswith('[['):
                     d_par[p.name.lower()] = eval(p.code.replace('[[', '').replace(']]', ''), {'o': cur_obj, 'c': cny, 't': time, 'u': user}) or ''
-                    if p.name.lower() == "language":
-                        my_language = d_par[p.name.lower()]
                 else:
                     d_par[p.name] = p.code
 
+            # If date_format is not given as parameter, it's set from the language
+            if not 'date_format' in d_par:
+                my_language_id = self.pool.get("res.lang").search(self.cr,self.uid,[("code","=",language)])
+                if my_language_id:
+                    date_format = self.pool.get("res.lang").read(self.cr,self.uid,my_language_id,["date_format"])[0]['date_format']
+                    # Date format is changed because JasperSoft does not accept format based on %. It needs usual format for dates
+                    date_format = date_format.replace("%d",'dd')
+                    date_format = date_format.replace("%m",'MM')
+                    date_format = date_format.replace("%Y",'YYYY')
+                    d_par['date_format'] = date_format
+            
             # If YAML we must compose it
             if self.attrs['params'][2] == 'yaml':
                 #Using language coming from the jasper document if exists 
