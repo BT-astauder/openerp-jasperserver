@@ -430,6 +430,7 @@ class jasper_document_label(orm.Model):
         'name': fields.char('Parameter', size=64, help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter', required=True),
         'value': fields.char('Value', size=256, help='Name of the label, this field must be translate in all languages available in the database', required=True, translate=True),
         'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
+        'enabled': fields.dummy(string='Enabled', type='boolean'),
     }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
