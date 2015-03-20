@@ -119,13 +119,13 @@ class JasperServer(orm.Model):
         # Check if plpgsql language is installed, if not raise an error
         cr.execute("""select count(*) as "installed" from pg_language where lanname='plpgsql';""")
         if not cr.fetchone()[0]:
-            _logger.warn('Please installed plpgsql in your database, before update your OpenERP server!\nused for translation')
+            _logger.debug('Please installed plpgsql in your database, before update your OpenERP server!\nused for translation')
 
         # For some function, we must add plpythonu as language
         _logger.info("Admin role for the database: %s" % config.get('db_admin', 'oerpadmin'))
         cr.execute("""SELECT count(*) from pg_roles WHERE rolname=%s and rolcanlogin=false;""", (config.get('db_admin', 'oerpadmin'),))
         if not cr.fetchone()[0]:
-            _logger.warn('Role admin not found, we cannot install plpython and function for jasperserver')
+            _logger.debug('Role admin not found, we cannot install plpython and function for jasperserver')
         else:
             # Check if plpythonu is installed
             cr.execute("""SET ROLE %s""", (config.get('db_admin', 'oerpadmin'),))
