@@ -40,6 +40,8 @@ class IrActionReport(osv.Model):
         """
         Register all jasper report
         """
+        returnValue = super(IrActionReport, self).register_all(cursor)
+
         _logger.info('====[REGISTER JASPER REPORT]========================')
         cursor.execute("SELECT id, report_name FROM ir_act_report_xml WHERE report_type = 'jasper'")
         records = cursor.dictfetchall()
@@ -68,10 +70,9 @@ class IrActionReport(osv.Model):
                 registered_report(record['report_name'])
                 _logger.info('Register the jasper report service [%s]' % record['report_name'])
 
-
         _logger.info('====[END REGISTER RML REPORT FOR JASPER REPORT]====================')
 
-        return True
+        return returnValue
 
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
