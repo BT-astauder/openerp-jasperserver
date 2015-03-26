@@ -384,6 +384,7 @@ class Report(object):
                 mycontext = context.copy()
                 data = self.data.copy()
                 data['report_type'] = 'raw'
+                mycontext['called_from_jasper'] = True
                 (result, format) = srv.create(self.cr, self.uid, self.ids, data, mycontext)
                 if current_document.debug:
                     return (result, 1)
