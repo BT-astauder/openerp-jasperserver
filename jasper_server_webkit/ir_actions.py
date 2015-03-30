@@ -28,7 +28,7 @@ import logging
 import importlib
 from openerp.report import report_sxw
 import openerp.netsvc as netsvc
-import openerp.modules as addons
+
 
 _logger = logging.getLogger(__name__)
 
@@ -36,17 +36,14 @@ _logger = logging.getLogger(__name__)
 class IrActionReport(osv.Model):
     _inherit = 'ir.actions.report.xml'
 
-    def register_all(self, cursor, called_from_jasper_server_webkit=False):
+    def register_all(self, cursor):
         """
         Register all jasper report
         """
-        return_value = super(IrActionReport, self).register_all(cursor)
 
         # in case jasper_server_webkit is installed, it will do all,
         # to make sure, that it is done after all webkit reports are installed
-        loaded_mods = addons.module.loaded
-        if 'jasper_server_webkit' in loaded_mods:
-            return return_value
+        return_value = super(IrActionReport, self).register_all(cursor)
 
         _logger.info('====[REGISTER JASPER REPORT]========================')
         cursor.execute("SELECT id, report_name FROM ir_act_report_xml WHERE report_type = 'jasper'")
