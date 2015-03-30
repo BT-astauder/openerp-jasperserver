@@ -30,7 +30,7 @@ def generate_pdf(self, comm_path, report_xml, header, footer, html_list,
     if 'called_from_jasper' in context:
         return tools.ustr("\n".join(html_list))
 
-    return original_generate_pdf(comm_path, report_xml, header, footer,
+    return original_generate_pdf(self, comm_path, report_xml, header, footer,
                                  html_list, webkit_header, printer, child,
                                  context)
 
