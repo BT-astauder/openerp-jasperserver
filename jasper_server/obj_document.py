@@ -2,7 +2,8 @@
 ##############################################################################
 #
 #    jasper_server module for OpenERP,
-#    Copyright (C) 2010-2011 SYLEAM Info Services (<http://www.Syleam.fr/>) Damien CRIER
+#    Copyright (C) 2010-2011 SYLEAM Info Services (<http://www.Syleam.fr/>)
+#                            Damien CRIER
 #
 #    This file is a part of jasper_server
 #
@@ -59,25 +60,34 @@ class jasper_document(orm.Model):
 
     def _get_formats(self, cr, uid, context=None):
         """
-        Return the list of all types of document that can be generate by JasperServer
+        Return the list of all types of document that can be
+        generate by JasperServer
         """
         if not context:
             context = {}
         extension_obj = self.pool.get('jasper.document.extension')
         ext_ids = extension_obj.search(cr, uid, [], context=context)
         extensions = extension_obj.read(cr, uid, ext_ids, context=context)
-        extensions = [(extension['jasper_code'], extension['name'] + " (*." + extension['extension'] + ")") for extension in extensions]
-        return extensions
+        ext = [(extension['jasper_code'],
+                extension['name'] + " (*." + extension['extension'] + ")")
+               for extension in extensions]
+        return ext
 
     _columns = {
-        'name': fields.char('Name', size=128, translate=True, required=True, placeholder="InvoiceJ"),  # button name
-        'enabled': fields.boolean('Active', help="Indicates if this document is active or not"),
-        'model_id': fields.many2one('ir.model', 'Object Model', required=True),  # object model in ir.model
-        'server_id': fields.many2one('jasper.server', 'Server', help='Select specific JasperServer'),
+        'name': fields.char('Name', size=128, translate=True, required=True,
+                            placeholder="InvoiceJ"),  # button name
+        'enabled': fields.boolean('Active',
+                                  help="Indicates if this document is active or not"),  # noqa
+        'model_id': fields.many2one('ir.model', 'Object Model', required=True),
+        'server_id': fields.many2one('jasper.server', 'Server',
+                                     help='Select specific JasperServer'),
         'jasper_file': fields.char('Jasper file', size=128),  # jasper filename
-        'group_ids': fields.many2many('res.groups', 'jasper_wizard_group_rel', 'document_id', 'group_id', 'Groups', ),
+        'group_ids': fields.many2many('res.groups', 'jasper_wizard_group_rel',
+                                      'document_id', 'group_id', 'Groups', ),
         'depth': fields.integer('Depth', required=True),
-        'format_choice': fields.selection([('mono', 'Single Format'), ('multi', 'Multi Format')], 'Format Choice', required=True),
+        'format_choice': fields.selection([('mono', 'Single Format'),
+                                           ('multi', 'Multi Format')],
+                                          'Format Choice', required=True),
         'format': fields.selection(_get_formats, 'Formats'),
         'report_unit': fields.char('Report Unit', size=128, help='Enter the name for report unit in Jasper Server'),
         'mode': fields.selection([('sql', 'SQL'), ('xml', 'XML'), ('multi', 'Multiple Report'), ('yaml', 'YAML'), ('rml', 'RML')], 'Mode', required=True),
@@ -159,7 +169,8 @@ class jasper_document(orm.Model):
                 'header': False,
                 'multi': False,
             }
-            act_report_obj.write(cr, uid, [doc.report_id.id], args, context=context)
+            act_report_obj.write(cr, uid, [doc.report_id.id], args,
+                                 context=context)
         else:
             _logger.info('Create "%s" service' % doc.name)
             args = {
@@ -172,10 +183,22 @@ class jasper_document(orm.Model):
                 'multi': False,
             }
             report_id = act_report_obj.create(cr, uid, args, context=context)
-            cr.execute("""UPDATE jasper_document SET report_id=%s WHERE id=%s""", (report_id, id))
+            cr.execute("""UPDATE jasper_document SET report_id=%s
+                           WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
+<<<<<<< HEAD
             self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
         registered_report(report_name)
+=======
+            self.pool.get('ir.model.data').ir_set(cr, uid, 'action',
+                                                  'client_print_multi',
+                                                  doc.name,
+                                                  [doc.model_id.model],
+                                                  value,
+                                                  replace=False,
+                                                  isobject=True)
+        registered_report('jasper.report_%d' % (doc.id,))
+>>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
 
     def action_values(self, cr, uid, report_id, context=None):
         """
@@ -187,9 +210,11 @@ class jasper_document(orm.Model):
             ('value', '=', 'ir.actions.report.xml,%d' % report_id),
             # ('object', '=', True),
         ]
-        return self.pool.get('ir.values').search(cr, uid, args, context=context)
+        return self.pool.get('ir.values').search(cr, uid, args,
+                                                 context=context)
 
-    def get_action_report(self, cr, uid, module, name, datas=None, context=None):
+    def get_action_report(self, cr, uid, module, name, datas=None,
+                          context=None):
         """
         Give the XML ID dans retrieve the report action
 
@@ -224,7 +249,13 @@ class jasper_document(orm.Model):
         if not self.action_values(cr, uid, doc.report_id.id, context=context):
             value = 'ir.actions.report.xml,%d' % doc.report_id.id
             _logger.debug('create_values -> ' + value)
-            self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
+            self.pool.get('ir.model.data').ir_set(cr, uid, 'action',
+                                                  'client_print_multi',
+                                                  doc.name,
+                                                  [doc.model_id.model],
+                                                  value,
+                                                  replace=False,
+                                                  isobject=True)
         return True
 
     def unlink_values(self, cr, uid, id, context=None):
@@ -232,7 +263,10 @@ class jasper_document(orm.Model):
         Only remove link in ir.values, not the report
         """
         doc = self.browse(cr, uid, id, context=context)
-        self.pool.get('ir.values').unlink(cr, uid, self.action_values(cr, uid, doc.report_id.id, context=context))
+        self.pool.get('ir.values').unlink(cr, uid,
+                                          self.action_values(cr, uid,
+                                                             doc.report_id.id,
+                                                             context=context))
         _logger.debug('unlink_values')
         return True
 
@@ -243,13 +277,15 @@ class jasper_document(orm.Model):
         if context is None:
             context = {}
 
-        doc_id = super(jasper_document, self).create(cr, uid, vals, context=context)
+        doc_id = super(jasper_document, self).create(cr, uid, vals,
+                                                     context=context)
         self.make_action(cr, uid, doc_id, context=context)
 
         # Check if view and create it in the database
         if vals.get('sql_name') and vals.get('sql_view'):
             drop_view_if_exists(cr, vals.get('sql_name'))
-            sql_query = 'CREATE OR REPLACE VIEW %s AS\n%s' % (vals['sql_name'], vals['sql_view'])
+            sql_query = 'CREATE OR REPLACE VIEW %s AS\n%s' % (vals['sql_name'],
+                                                              vals['sql_view'])
             cr.execute(sql_query)
         return doc_id
 
@@ -261,13 +297,17 @@ class jasper_document(orm.Model):
             context = {}
 
         if vals.get('sql_name') or vals.get('sql_view'):
-            sql_name = vals.get('sql_name', self.browse(cr, uid, ids[0]).sql_name)
-            sql_view = vals.get('sql_view', self.browse(cr, uid, ids[0]).sql_view)
+            sql_name = vals.get('sql_name',
+                                self.browse(cr, uid, ids[0]).sql_name)
+            sql_view = vals.get('sql_view',
+                                self.browse(cr, uid, ids[0]).sql_view)
             drop_view_if_exists(cr, sql_name)
-            sql_query = 'CREATE OR REPLACE VIEW %s AS\n%s' % (sql_name, sql_view)
+            sql_query = 'CREATE OR REPLACE VIEW %s AS\n%s' % (sql_name,
+                                                              sql_view)
             cr.execute(sql_query, (ids,))
 
-        res = super(jasper_document, self).write(cr, uid, ids, vals, context=context)
+        res = super(jasper_document, self).write(cr, uid, ids, vals,
+                                                 context=context)
 
         if not context.get('action'):
             for id in ids:
@@ -296,11 +336,13 @@ class jasper_document(orm.Model):
 
         default['report_id'] = False
         default['name'] = doc.name + _(' (copy)')
-        return super(jasper_document, self).copy(cr, uid, id, default, context=context)
+        return super(jasper_document, self).copy(cr, uid, id, default,
+                                                 context=context)
 
     def unlink(self, cr, uid, ids, context=None):
         """
-        When remove jasper_document, we must remove data to ir.actions.report.xml and ir.values
+        When remove jasper_document, we must remove data to
+        ir.actions.report.xml and ir.values
         """
         if context is None:
             context = {}
@@ -308,9 +350,12 @@ class jasper_document(orm.Model):
         for doc in self.browse(cr, uid, ids, context=context):
             if doc.report_id:
                 self.unlink_values(cr, uid, doc.id, context)
-                self.pool.get('ir.actions.report.xml').unlink(cr, uid, [doc.report_id.id], context=context)
+                self.pool['ir.actions.report.xml'].unlink(cr, uid,
+                                                          [doc.report_id.id],
+                                                          context=context)
 
-        return super(jasper_document, self).unlink(cr, uid, ids, context=context)
+        return super(jasper_document, self).unlink(cr, uid, ids,
+                                                   context=context)
 
     def check_report(self, cr, uid, ids, context=None):
         # TODO, use jasperlib to check if report exists
@@ -319,28 +364,41 @@ class jasper_document(orm.Model):
         if curr.server_id:
             jss = js_server.browse(cr, uid, curr.server_id.id, context=context)
         else:
-            js_server_ids = js_server.search(cr, uid, [('enable', '=', True)], context=context)
+            js_server_ids = js_server.search(cr, uid, [('enable', '=', True)],
+                                             context=context)
             if not js_server_ids:
-                raise osv.except_osv(_('Error'), _('No JasperServer configuration found !'))
+                raise osv.except_osv(_('Error'),
+                                     _('No JasperServer configuration found !'))  # noqa
 
             jss = js_server.browse(cr, uid, js_server_ids[0], context=context)
 
         def compose_path(basename):
-            return jss['prefix'] and '/' + jss['prefix'] + '/instances/%s/%s' or basename
+            return jss['prefix'] and \
+                '/' + jss['prefix'] + '/instances/%s/%s' or basename
 
         try:
             js = jasperlib.Jasper(jss.host, jss.port, jss.user, jss['pass'])
             js.auth()
+<<<<<<< HEAD
             if curr.any_database:
                 uri = compose_path('/openerp/bases/%s') % ( curr.report_unit)
             else:
                 uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname, curr.report_unit)
+=======
+            uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname,
+                                                          curr.report_unit)
+>>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
             envelop = js.run_report(uri=uri, output='PDF', params={})
             js.send(jasperlib.SoapEnv('runReport', envelop).output())
         except jasperlib.ServerNotFound:
-            raise osv.except_osv(_('Error'), _('Error, server not found %s %d') % (js.host, js.port))
+            raise osv.except_osv(
+                _('Error'),
+                _('Error, server not found %s %d') % (js.host, js.port))
         except jasperlib.AuthError:
-            raise osv.except_osv(_('Error'), _('Error, Authentification failed for %s/%s') % (js.user, js.pwd))
+            raise osv.except_osv(
+                _('Error'),
+                _('Error, Authentification failed for %s/%s') % (js.user,
+                                                                 js.pwd))
         except jasperlib.ServerError, e:
             raise osv.except_osv(_('Error'), str(e).decode('utf-8'))
 
@@ -359,12 +417,13 @@ class jasper_document(orm.Model):
         tree = etree.parse(fp)
         param = tree.xpath('//root:parameter/@name', namespaces=JRXML_NS)
         for label in param:
-            val = tree.xpath('//root:parameter[@name="' + label + '"]//root:defaultValueExpression', namespaces=JRXML_NS)[0].text
+            val = tree.xpath('//root:parameter[@name="' + label + '"]//root:defaultValueExpression', namespaces=JRXML_NS)[0].text  # noqa
             _logger.debug('%s -> %s' % (label, val))
 
             if label.startswith('I18N_'):
                 lab = label.replace('I18N_', '')
-                label_ids = label_obj.search(cr, uid, [('name', '=', lab)], context=context)
+                label_ids = label_obj.search(cr, uid, [('name', '=', lab)],
+                                             context=context)
                 if label_ids:
                     continue
                 label_obj.create(cr, uid, {
@@ -374,7 +433,8 @@ class jasper_document(orm.Model):
                 }, context=context)
             if label.startswith('OERP_') and label not in KNOWN_PARAMETERS:
                 lab = label.replace('OERP_', '')
-                param_ids = param_obj.search(cr, uid, [('name', '=', lab)], context=context)
+                param_ids = param_obj.search(cr, uid, [('name', '=', lab)],
+                                             context=context)
                 if param_ids:
                     continue
                 param_obj.create(cr, uid, {
@@ -385,10 +445,15 @@ class jasper_document(orm.Model):
                 }, context=context)
 
         # Now we save JRXML as attachment
-        # We retrieve the name of the report with the attribute name from the jasperReport element
-        filename = '%s.jrxml' % tree.xpath('//root:jasperReport/@name', namespaces=JRXML_NS)[0]
+        # We retrieve the name of the report with the attribute name from the
+        # jasperReport element
+        filename = '%s.jrxml' % tree.xpath('//root:jasperReport/@name',
+                                           namespaces=JRXML_NS)[0]
 
-        att_ids = att_obj.search(cr, uid, [('name', '=', filename), ('res_model', '=', 'jasper.document'), ('res_id', '=', ids[0])], context=context)
+        att_ids = att_obj.search(
+            cr, uid, [('name', '=', filename),
+                      ('res_model', '=', 'jasper.document'),
+                      ('res_id', '=', ids[0])], context=context)
         if att_ids:
             att_obj.unlink(cr, uid, att_ids, context=context)
 
@@ -402,19 +467,24 @@ class jasper_document(orm.Model):
                                  'res_model': 'jasper.document',
                                  'res_id': ids[0]}, context=ctx)
 
-
         fp.close()
         return True
+
 
 class jasper_document_parameter(orm.Model):
     _name = 'jasper.document.parameter'
     _description = 'Add parameter to send to jasper server'
 
     _columns = {
-        'name': fields.char('Name', size=32, help='Name of the jasper parameter, the prefix must be OERP_', required=True),
-        'code': fields.char('Code', size=256, help='Enter the code to retrieve data', required=True),
+        'name': fields.char('Name', size=32, help='Name of the jasper parameter, the prefix must be OERP_', required=True),  # noqa
+        'code': fields.char('Code', size=256, help='Enter the code to retrieve data', required=True),  # noqa
         'enabled': fields.boolean('Enabled'),
+<<<<<<< HEAD
         'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
+=======
+        'document_id': fields.many2one('jasper.document', 'Document',
+                                       required=True),
+>>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
     }
 
     _defaults = {
@@ -427,9 +497,18 @@ class jasper_document_label(orm.Model):
     _description = 'Manage label in document, for different language'
 
     _columns = {
+<<<<<<< HEAD
         'name': fields.char('Parameter', size=64, help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter', required=True),
         'value': fields.char('Value', size=256, help='Name of the label, this field must be translate in all languages available in the database', required=True, translate=True),
         'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
+=======
+        'name': fields.char('Parameter', size=64, required=True,
+                            help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter'),  # noqa
+        'value': fields.char('Value', size=256, required=True, translate=True,
+                             help='Name of the label, this field must be translate in all languages available in the database'),  # noqa
+        'document_id': fields.many2one('jasper.document', 'Document',
+                                       required=True),
+>>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
     }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

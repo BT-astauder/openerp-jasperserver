@@ -49,9 +49,11 @@ BODY_TEMPLATE = """<SOAP-ENV:Envelope
 <ns4:runReport>
 <request xsi:type="xsd:string">
     &lt;request operationName=&quot;runReport&quot; locale=&quot;fr&quot;&gt;
-        &lt;argument name=&quot;RUN_OUTPUT_FORMAT&quot;&gt;%(format)s&lt;/argument&gt;
+        &lt;argument
+            name=&quot;RUN_OUTPUT_FORMAT&quot;&gt;%(format)s&lt;/argument&gt;
         &lt;argument name=&quot;PAGE&quot;&gt;0&lt;/argument&gt;
-        &lt;resourceDescriptor name=&quot;&quot; wsType=&quot;reportUnit&quot; uriString=&quot;%(path)s&quot; isNew=&quot;false&quot;&gt;
+        &lt;resourceDescriptor name=&quot;&quot; wsType=&quot;reportUnit&quot;
+          uriString=&quot;%(path)s&quot; isNew=&quot;false&quot;&gt;
             &lt;label&gt;&lt;/label&gt;
             %(param)s
         &lt;/resourceDescriptor&gt;
@@ -139,8 +141,10 @@ def parameter(dico, resource, special=None):
 
     res = entities(res)
     if resource.get('xml_data'):
-        res += '&lt;parameter class=&quot;java.lang.String&quot; name=&quot;XML_DATA&quot;&gt;'
-        res += '&lt;![CDATA[&quot;%s&quot;]]&gt;&lt;/parameter&gt;' % resource['xml_data']
+        res += '&lt;parameter class=&quot;java.lang.String&quot;' \
+               'name=&quot;XML_DATA&quot;&gt;'
+        res += '&lt;![CDATA[&quot;%s&quot;]]&gt;&lt;/parameter&gt;' % \
+               resource['xml_data']
     return res
 
 
@@ -215,6 +219,5 @@ def merge_pdf(lpdf):
     # We store the content of the merge into a file object
     ret.write(fo_pdf)
     return fo_pdf
-
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
