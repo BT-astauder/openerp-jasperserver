@@ -22,9 +22,16 @@
 #
 ##############################################################################
 
+from openerp.osv import osv, fields
+from jasper_server.common import registered_report
+import logging
+import importlib
+from openerp.report import report_sxw
+import openerp.netsvc as netsvc
+import openerp.modules as addons
+
 import openerp
 from openerp import models
-import logging
 from jasper import report_jasper
 
 _logger = logging.getLogger(__name__)
@@ -32,6 +39,50 @@ _logger = logging.getLogger(__name__)
 
 class IrActionReport(models.Model):
     _inherit = 'ir.actions.report.xml'
+
+    def register_all(self, cursor, called_from_jasper_server_webkit=False):
+        
+        return_value = super(IrActionReport, self).register_all(cursor)
+
+        # in case jasper_server_webkit is installed, it will do all,
+        # to make sure, that it is done after all webkit reports are installed
+        loaded_mods = addons.module.loaded
+        if 'jasper_server_webkit' in loaded_mods:
+            return return_value
+
+        _logger.info('====[REGISTER JASPER REPORT]========================')
+        cursor.execute("""SELECT id, report_name
+                            FROM ir_act_report_xml
+                           WHERE report_type = 'jasper'""")
+        records = cursor.dictfetchall()
+        for record in records:
+            registered_report(record['report_name'])
+        _logger.info('====[END REGISTER JASPER REPORT]====================')
+
+        _logger.info('====[REGISTER RML REPORT FOR JASPER REPORT]========================')
+        cursor.execute("""
+          SELECT ir_act_report_xml.id, ir_act_report_xml.report_name
+            FROM ir_act_report_xml, jasper_document
+            WHERE jasper_document.mode='rml'
+              AND jasper_document.rml_ir_actions_report_xml_id = ir_act_report_xml.id""")
+        records = cursor.dictfetchall()
+        for record in records:
+
+            gname = 'report.' + record['report_name']
+            if gname in netsvc.Service._services:
+
+                # first rename the original report
+                gname_new = 'report.rml2jasper.' + record['report_name']
+                netsvc.Service._services[gname_new] = netsvc.Service._services[gname]
+                del netsvc.Service._services[gname]
+
+                # register the new jasper report
+                registered_report(record['report_name'])
+                _logger.info('Register the jasper report service [%s]' % record['report_name'])
+
+        _logger.info('====[END REGISTER RML REPORT FOR JASPER REPORT]====================')
+
+        return return_value
 
     @classmethod
     def _add_field(self, name, field):

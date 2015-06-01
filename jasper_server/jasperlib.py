@@ -67,7 +67,11 @@ class UnknownFormat(JasperException):
     pass
 
 
+<<<<<<< HEAD
+## Create some XML element to resourceDescriptor
+=======
 # Create some XML element to resourceDescriptor
+>>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
 class Request(etree.ElementBase):
     TAG = 'request'
 
@@ -140,7 +144,7 @@ class Jasper(object):
         }
         self.body = ''
 
-    def auth(self,):
+    def auth(self,locale='en_US'):
         """
         Add credential
         """
@@ -149,7 +153,7 @@ class Jasper(object):
         # We must simulate a request if we want to check the auth is correct
 
         # Generate a soap query to verify the authentification
-        rq = Request(operationName='list', locale='fr_FR')
+        rq = Request(operationName='list', locale=locale)
         rq.append(RequestRD('folder', '', '/'))
         self.body = SoapEnv('list', etree.tostring(rq)).output()
         try:
@@ -203,8 +207,12 @@ class Jasper(object):
 
         if params is None:
             params = {}
+        
+        language = 'en_US'
+        if 'OERP_LANGUAGE' in params:
+            language = params['OERP_LANGUAGE']
 
-        rq = Request(operationName=operation, locale='fr_FR')
+        rq = Request(operationName=operation, locale=language)
         for k in arguments:
             rq.append(RequestArgument(name=k, value=arguments[k]))
 
@@ -216,10 +224,14 @@ class Jasper(object):
         # Add query parameters
         for k, v in params.items():
             p = etree.SubElement(rd, 'parameter', name=k)
+<<<<<<< HEAD
+            p.text = str(v).encode('ascii', 'xmlcharrefreplace')
+=======
             if isinstance(v, basestring):
                 p.text = v
             else:
                 p.text = str(v)
+>>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
 
         rq.append(rd)
         return etree.tostring(rq, pretty_print=True)
@@ -228,12 +240,12 @@ class Jasper(object):
         """
         Launch a runReport in Jasper
         """
-        if output not in KNOWN_FORMAT:
+        if output.upper() not in KNOWN_FORMAT:
             raise UnknownFormat(output)
 
         args = {
             'RUN_OUTPUT_FORMAT': output,
-            'PAGE': '0',
+            #'PAGE': '0',
         }
 
         return self.create_request(operation='runReport', wsType='reportUnit',

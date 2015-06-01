@@ -36,10 +36,12 @@ from .common import parameter_dict, merge_pdf
 from report_exception import JasperException, EvalError
 from pyPdf import PdfFileWriter, PdfFileReader
 from openerp.addons.jasper_server import jasperlib as jslib
+from openerp import netsvc
+
 
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
-##
+# #
 # If cStringIO is available, we use it
 try:
     from cStringIO import StringIO
@@ -56,14 +58,14 @@ class external_pdf(render):
     def _render(self):
         return self.content
 
-    def set_output_type(self, format):
+    def set_output_type(self, file_format):
         """
         Change the format of the file
 
         :param format: file format (eg: pdf)
         :type  format: str
         """
-        self.output_type = format
+        self.output_type = file_format
 
     def get_output_type(self,):
         """
@@ -233,6 +235,11 @@ class Report(object):
         if ids is None:
             ids = []
 
+        content = None
+
+        doc_obj = self.pool.get('jasper.document')
+        js_obj = self.pool.get('jasper.server')
+
         cur_obj = self.model_obj.browse(self.cr, self.uid, ex, context=context)
         aname = False
         if self.attrs['attachment']:
@@ -244,10 +251,11 @@ class Report(object):
 
         log_debug('Number of duplicate copy: %d' % int(duplicate))
 
+        # If language is set in the jasper document we get it, otherwise language is by default American English 
         language = context.get('lang', 'en_US')
         if current_document.lang:
-            language = self._eval_lang(
-                cur_obj, current_document, context=context)
+            language = self._eval_lang(cur_obj, current_document)
+            language = language[0][0] 
 
         # Check if we can launch this reports
         # Test can be simple, or un a function
@@ -359,15 +367,55 @@ class Report(object):
                 'company_fax': cny.partner_id.fax or '',
                 'company_mail': cny.partner_id.email or '',
             })
-
+            
+            # Parameters are evaluated
             for p in current_document.param_ids:
                 if p.code and p.code.startswith('[['):
                     d_par[p.name.lower()] = eval(p.code.replace('[[', '').replace(']]', ''), {'o': cur_obj, 'c': cny, 't': time, 'u': user}) or ''  # noqa
                 else:
                     d_par[p.name] = p.code
 
-            self.outputFormat = current_document.format
+            # If date_format is not given as parameter, it's set from the language
+            if not 'date_format' in d_par:
+                my_language_id = self.pool.get("res.lang").search(self.cr,self.uid,[("code","=",language)])
+                if my_language_id:
+                    date_format = self.pool.get("res.lang").read(self.cr,self.uid,my_language_id,["date_format"])[0]['date_format']
+                    # Date format is changed because JasperSoft does not accept format based on %. It needs usual format for dates
+                    date_format = date_format.replace("%d",'dd')
+                    date_format = date_format.replace("%m",'MM')
+                    date_format = date_format.replace("%Y",'YYYY')
+                    d_par['date_format'] = date_format
+            
+            # If YAML we must compose it
+            if self.attrs['params'][2] == 'yaml':
+                #Using language coming from the jasper document if exists 
+                my_context = context.copy()
+                my_context['lang'] = language
+                
+                d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
+                if current_document.debug:
+                    return (d_xml, 1)
+                d_par['xml_data'] = d_xml
+
+            # If RML, call original report
+            if self.attrs['params'][2] == 'rml':
+                serviceName = 'report.rml2jasper.' + self.name[7:]  # replace "report."
+                srv = netsvc.Service._services[serviceName]
+
+                mycontext = context.copy()
+                data = self.data.copy()
+                data['report_type'] = 'raw'
+                mycontext['called_from_jasper'] = True
+                (result, format) = srv.create(self.cr, self.uid, self.ids, data, mycontext)
+                if current_document.debug:
+                    return (result, 1)
+                d_par['xml_data'] = result
+
+            self.outputFormat = current_document.format.lower()
             special_dict = {
+                'TIME_ZONE': 'UTC',
+                'REPORT_DATE_FORMAT': "dd_MM_yyyy",
+                'XML_DATE_PATTERN': 'yyyy-MM-dd HH:mm:ss',
                 'REPORT_LOCALE': language or 'en_US',
                 'IS_JASPERSERVER': 'yes',
             }
@@ -392,38 +440,44 @@ class Report(object):
 
             par = parameter_dict(self.attrs, d_par, special_dict)
 
-            # Execute the before query if it available
+            # add generated XML to the service input params
+            if 'xml_data' in d_par:
+                par['XML_DATA'] = d_par['xml_data']
+
+            # ##
+            # # Execute the before query if it available
+            # #
             if js_conf.get('before'):
                 self.cr.execute(js_conf['before'], {'id': ex})
 
             try:
-                js = jslib.Jasper(js_conf['host'], js_conf['port'],
-                                  js_conf['user'], js_conf['pass'])
-                js.auth()
-                envelop = js.run_report(uri=self.path or
-                                        self.attrs['params'][1],
-                                        output=self.outputFormat,
-                                        params=par)
-                response = js.send(jslib.SoapEnv('runReport',
-                                                 envelop).output())
+                js = jslib.Jasper(js_conf['host'], js_conf['port'], js_conf['user'], js_conf['pass'])
+                js.auth(language)
+                envelop = js.run_report(uri=self.path or self.attrs['params'][1], output=self.outputFormat, params=par)
+                response = js.send(jslib.SoapEnv('runReport', envelop).output())
                 content = response['data']
                 mimetype = response['content-type']
                 ParseResponse(response, pdf_list, self.outputFormat.lower())
             except jslib.ServerNotFound:
                 raise JasperException(_('Error'), _('Server not found !'))
             except jslib.AuthError:
-                raise JasperException(_('Error'), _('Autentification failed !'))  # noqa
+                raise JasperException(_('Error'), _('Autentification failed !'))
+            except Exception as e:
+                raise JasperException(_('Error'), e)
 
-            # Store the content in ir.attachment if ask
+            # ##
+            # # Store the content in ir.attachment if ask
             if aname:
                 self.add_attachment(ex, aname, content, mimetype=mimetype,
                                     context=self.context)
 
-            # Execute the before query if it available
+            # ##
+            # # Execute the before query if it available
+            # #
             if js_conf.get('after'):
                 self.cr.execute(js_conf['after'], {'id': ex})
 
-            # Update the number of print on object
+            # # Update the number of print on object
             fld = self.model_obj.fields_get(self.cr, self.uid)
             if 'number_of_print' in fld:
                 self.model_obj.write(
@@ -442,20 +496,33 @@ class Report(object):
         log_debug('DATA:')
         log_debug('\n'.join(['%s: %s' % (x, self.data[x]) for x in self.data]))
 
-        ##
+        # #
         # For each IDS, launch a query, and return only one result
         #
         pdf_list = []
-        doc_ids = self.doc_obj.search(self.cr, self.uid,
-                                      [('id', '=', self.service)],
-                                      context=context)
-        if not doc_ids:
+        doc_ids = []
+        if self.service:
+            try:
+                service_id = int(self.service)
+                doc_ids = self.doc_obj.search(self.cr, self.uid, [('id', '=', service_id)], context=context)
+            except ValueError:
+                report_name = self.service
+                report_str = self.service[0:7]
+                if report_str == "report.":
+                    report_name = self.service[7:]  # remove "report."
+                    doc_ids = self.doc_obj.search(self.cr, self.uid, [('rml_ir_actions_report_xml_name', '=', report_name)], context=context)
+                else:
+                    doc_ids = self.doc_obj.search(self.cr, self.uid, [('report_name', '=', report_name)], context=context)
+
+        if not doc_ids or len(doc_ids) == 0:
             raise JasperException(_('Configuration Error'),
                                   _("Service name doesn't match!"))
 
         doc = self.doc_obj.browse(self.cr, self.uid, doc_ids[0],
                                   context=context)
         self.outputFormat = doc.format
+        if doc.debug:
+            self.outputFormat = 'XML'
         log_debug('Format: %s' % doc.format)
 
         if doc.server_id:
@@ -475,39 +542,60 @@ class Report(object):
         self.attrs['attachment'] = doc.attachment
         self.attrs['reload'] = doc.attachment_use
         if not self.attrs.get('params'):
-            uri = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname,
-                                                          doc.report_unit)
+            if doc.any_database:
+                uri = compose_path('/openerp/bases/%s') % (doc.report_unit)
+            else:
+                uri = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, doc.report_unit)
             self.attrs['params'] = (doc.format, uri, doc.mode, doc.depth, {})
 
         one_check = {}
         one_check[doc.id] = False
         content = ''
         duplicate = 1
-        for ex in ids:
+
+        # in RML we maybe have no records, but data
+        if not doc.mode == 'rml':
+            for ex in ids:
+                if doc.mode == 'multi' and self.outputFormat == 'PDF':
+                    for d in doc.child_ids:
+                        if d.only_one and one_check.get(d.id, False):
+                            continue
+                        if doc.any_database:
+                            self.path = compose_path('/openerp/bases/%s') % ( d.report_unit)
+                        else:
+                            self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
+                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                        one_check[d.id] = True
+                else:
+                    if doc.only_one and one_check.get(doc.id, False):
+                        continue
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    one_check[doc.id] = True
+        else:
             if doc.mode == 'multi' and self.outputFormat == 'PDF':
                 for d in doc.child_ids:
                     if d.only_one and one_check.get(d.id, False):
                         continue
-                    self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)  # noqa
-                    (content, duplicate) = self._jasper_execute(
-                        ex, d, js, pdf_list, reload, ids, context=self.context)
+                    if doc.any_database:
+                        self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
+                    else:
+                        self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
+                    (content, duplicate) = self._jasper_execute(0, d, js, pdf_list, reload, ids, context=self.context)
                     one_check[d.id] = True
             else:
-                if doc.only_one and one_check.get(doc.id, False):
-                    continue
-                (content, duplicate) = self._jasper_execute(
-                    ex, doc, js, pdf_list, reload, ids, context=self.context)
-                one_check[doc.id] = True
+                if not (doc.only_one and one_check.get(doc.id, False)):
+                    (content, duplicate) = self._jasper_execute(0, doc, js, pdf_list, reload, ids, context=self.context)
+                    one_check[doc.id] = True
 
         # If format is not PDF, we return it directly
         # ONLY PDF CAN BE MERGE!
-        if self.outputFormat != 'PDF':
+        if self.outputFormat.upper() != 'PDF':
             self.obj = external_pdf(content, self.outputFormat)
             return (self.obj.content, self.outputFormat)
 
         def find_pdf_attachment(pdfname, current_obj):
             """
-            Evaluate the pdfname, and return it as a fiel object
+            Evaluate the pdfname, and return it as a field object
             """
             if not pdfname:
                 return None
@@ -525,15 +613,17 @@ class Report(object):
             datas = StringIO()
             if att.datas:
                 datas.write(base64.decodestring(att.datas))
-                return datas
+                return datas.getvalue()
             return None
 
         # If We must add begin and end file in the current PDF
-        cur_obj = self.model_obj.browse(self.cr, self.uid, ex, context=context)
-        pdf_fo_begin = find_pdf_attachment(doc.pdf_begin, cur_obj)
-        pdf_fo_ended = find_pdf_attachment(doc.pdf_ended, cur_obj)
+#        cur_obj = self.model_obj.browse(self.cr, self.uid, ex, context=context)
+#        pdf_fo_begin = find_pdf_attachment(doc.pdf_begin, cur_obj)
+#        pdf_fo_ended = find_pdf_attachment(doc.pdf_ended, cur_obj)
 
-        # We use pyPdf to merge all PDF in unique file
+        # #
+        # # We use pyPdf to merge all PDF in unique file
+        # #
         c = StringIO()
         if len(pdf_list) > 1 or duplicate > 1:
             # content = ''
@@ -572,9 +662,12 @@ class Report(object):
             os.remove(f)
 
         # If covers, we merge PDF
-        fo_merge = merge_pdf([pdf_fo_begin, c, pdf_fo_ended])
-        content = fo_merge.getvalue()
-        fo_merge.close()
+        # fo_merge = merge_pdf([pdf_fo_begin, c, pdf_fo_ended])
+        # fo_merge = merge_pdf([c])
+        # fo_merge.getvalue()
+        # fo_merge.close()
+
+        content = c.getvalue()
 
         if not c.closed:
             c.close()

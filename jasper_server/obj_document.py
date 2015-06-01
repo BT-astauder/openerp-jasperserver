@@ -89,62 +89,43 @@ class jasper_document(orm.Model):
                                            ('multi', 'Multi Format')],
                                           'Format Choice', required=True),
         'format': fields.selection(_get_formats, 'Formats'),
-        'report_unit': fields.char('Report Unit', size=128,
-                                   help='Enter the name for report unit in Jasper Server'),  # noqa
-        'mode': fields.selection([('sql', 'SQL'), ('xml', 'XML'),
-                                  ('multi', 'Multiple Report')], 'Mode',
-                                 required=True),
-        'before': fields.text('Before',
-                              help='This field must be filled with a valid SQL request and will be executed BEFORE the report edition',),  # noqa
-        'after': fields.text('After',
-                             help='This field must be filled with a valid SQL request and will be executed AFTER the report edition',),  # noqa
-        'attachment': fields.char('Save As Attachment Prefix', size=255,
-                                  help='This is the filename of the attachment used to store the printing result. Keep empty to not save the printed reports. You can use a python expression with the object and time variables.'),  # noqa
-        'attachment_use': fields.boolean('Reload from Attachment',
-                                         help='If you check this, then the second time the user prints with same attachment name, it returns the previous report.'),  # noqa
-        'param_ids': fields.one2many('jasper.document.parameter',
-                                     'document_id', 'Parameters', ),
-        'ctx': fields.char('Context', size=128,
-                           help="Enter condition with context does match to see the print action\neg: context.get('foo') == 'bar'"),  # noqa
-        'sql_view': fields.text('SQL View',
-                                help='Insert your SQL view, if the report is base on it'),  # noqa
+        'report_unit': fields.char('Report Unit', size=128, help='Enter the name for report unit in Jasper Server'),
+        'mode': fields.selection([('sql', 'SQL'), ('xml', 'XML'), ('multi', 'Multiple Report'), ('yaml', 'YAML'), ('rml', 'RML')], 'Mode', required=True),
+        'before': fields.text('Before', help='This field must be filled with a valid SQL request and will be executed BEFORE the report edition',),
+        'after': fields.text('After', help='This field must be filled with a valid SQL request and will be executed AFTER the report edition',),
+        'attachment': fields.char('Save As Attachment Prefix', size=255, help='This is the filename of the attachment used to store the printing result. Keep empty to not save the printed reports. You can use a python expression with the object and time variables.'),
+        'attachment_use': fields.boolean('Reload from Attachment', help='If you check this, then the second time the user prints with same attachment name, it returns the previous report.'),
+        'param_ids': fields.one2many('jasper.document.parameter', 'document_id', 'Parameters', ),
+        'ctx': fields.char('Context', size=128, help="Enter condition with context does match to see the print action\neg: context.get('foo') == 'bar'"),
+        'sql_view': fields.text('SQL View', help='Insert your SQL view, if the report is base on it'),
         'sql_name': fields.char('Name of view', size=128, ),
-        'child_ids': fields.many2many('jasper.document',
-                                      'jasper_document_multi_rel',
-                                      'source_id',
-                                      'destin_id',
-                                      'Child report',
-                                      help='Select reports to launch when this report is called'),  # noqa
-        'sequence': fields.integer('Sequence',
-                                   help='The sequence is used when launch a multple report, to select the order to launch'),  # noqa
-        'only_one': fields.boolean('Launch one time for all ids',
-                                   help='Launch the report only one time on multiple id'),  # noqa
-        'duplicate': fields.char('Duplicate', size=256,
-                                 help="Indicate the number of duplicate copie, use o as object to evaluate\neg: o.partner_id.copy\nor\n'1'", ),  # noqa
-        'lang': fields.char('Lang', size=256,
-                            help="Indicate the lang to use for this report, use' \
-                            'o as object to evaluate\neg: o.partner_id.lang\n' \
-                            'ctx as context\neg: ctx.get(\'test'\)\n' \
-                            'or\n'fr_FR'\ndefault use user's lang"),  # noqa
-        'report_id': fields.many2one('ir.actions.report.xml', 'Report link',
-                                     readonly=True, help='Link to the report in ir.actions.report.xml'),  # noqa
-        'check_sel': fields.selection([('none', 'None'),
-                                       ('simple', 'Simple'),
-                                       ('func', 'Function')],
-                                      'Checking type',
-                                      help='if None, no check\nif Simple, define on Check Simple the condition\n if function, the object have check_print function'),  # noqa
-        'check_simple': fields.char('Check Simple', size=256,
-                                    help="This code inside this field must return True to send report execution\neg o.state in ('draft', 'open')"),  # noqa
-        'message_simple': fields.char('Return message', size=256,
-                                      translate=True,
-                                      help="Error message when check simple doesn't valid"),  # noqa
-        'label_ids': fields.one2many('jasper.document.label', 'document_id',
-                                     'Labels'),
-        'pdf_begin': fields.char('PDF at begin', size=128,
-                                 help='Name of the PDF file store as attachment to add at the first page (page number not recompute)'),  # noqa
-        'pdf_ended': fields.char('PDF at end', size=128,
-                                 help='Name of the PDF file store as attachment to add at the last page (page number not recompute)'),  # noqa
+        'child_ids': fields.many2many('jasper.document', 'jasper_document_multi_rel', 'source_id', 'destin_id', 'Child report', help='Select reports to launch when this report is called'),
+        'sequence': fields.integer('Sequence', help='The sequence is used when launch a multple report, to select the order to launch'),
+        'only_one': fields.boolean('Launch one time for all ids', help='Launch the report only one time on multiple id'),
+        'duplicate': fields.char('Duplicate', size=256, help="Indicate the number of duplicate copie, use o as object to evaluate\neg: o.partner_id.copy\nor\n'1'", ),
+        'lang': fields.char('Lang', size=256, help="Indicate the lang to use for this report, use o as object to evaluate\neg: o.partner_id.lang\nor\n'fr_FR'\ndefault use user's lang"),
+        'report_id': fields.many2one('ir.actions.report.xml', 'Report link', readonly=True, help='Link to the report in ir.actions.report.xml'),
+        'check_sel': fields.selection([('none', 'None'), ('simple', 'Simple'), ('func', 'Function')], 'Checking type',
+                                      help='if None, no check\nif Simple, define on Check Simple the condition\n if function, the object have check_print function'),
+        'check_simple': fields.char('Check Simple', size=256, help="This code inside this field must return True to send report execution\neg o.state in ('draft', 'open')"),
+        'message_simple': fields.char('Return message', size=256, translate=True, help="Error message when check simple doesn't valid"),
+        'label_ids': fields.one2many('jasper.document.label', 'document_id', 'Labels'),
+        'pdf_begin': fields.char('PDF at begin', size=128, help='Name of the PDF file store as attachment to add at the first page (page number not recompute)'),
+        'pdf_ended': fields.char('PDF at end', size=128, help='Name of the PDF file store as attachment to add at the last page (page number not recompute)'),
+
+        # yaml fields
+        'yaml_object_ids': fields.one2many('jasper.yaml_object', 'jasper_document_id', string='YAML Object'),
+        'report_name':fields.char("Report Name", help="ir.actions.report.xml will be name with this field prefixed with 'jasper.report_'. The name must be unique"),
+        'debug': fields.boolean('Debug'),
+        'any_database': fields.boolean('Available for any database'),
+
+        # RML fields
+        'rml_ir_actions_report_xml_id': fields.many2one('ir.actions.report.xml', string='Report to generate RML'),
+        'rml_ir_actions_report_xml_name': fields.related('rml_ir_actions_report_xml_id', 'report_name', type="char", string='Report to generate RML'),
+
     }
+
+    _sql_constraints = [('unique_number', 'unique(report_link_name)','The Report Link Name must be unique.')]
 
     _defaults = {
         'format_choice': 'mono',
@@ -169,11 +150,14 @@ class jasper_document(orm.Model):
         act_report_obj = self.pool.get('ir.actions.report.xml')
 
         doc = self.browse(cr, uid, id, context=context)
+        report_name = 'jasper.report_%d' % (doc.id,)
+        if doc.report_name:
+            report_name = 'jasper.report_%s' % (doc.report_name,)
         if doc.report_id:
             _logger.info('Update "%s" service' % doc.name)
             args = {
                 'name': doc.name,
-                'report_name': 'jasper.report_%d' % (doc.id,),
+                'report_name': report_name,
                 'model': doc.model_id.model,
                 'groups_id': [(6, 0, [x.id for x in doc.group_ids])],
                 'header': False,
@@ -185,7 +169,7 @@ class jasper_document(orm.Model):
             _logger.info('Create "%s" service' % doc.name)
             args = {
                 'name': doc.name,
-                'report_name': 'jasper.report_%d' % (doc.id,),
+                'report_name': report_name,
                 'model': doc.model_id.model,
                 'report_type': 'jasper',
                 'groups_id': [(6, 0, [x.id for x in doc.group_ids])],
@@ -196,13 +180,8 @@ class jasper_document(orm.Model):
             cr.execute("""UPDATE jasper_document SET report_id=%s
                            WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
-            self.pool.get('ir.model.data').ir_set(cr, uid, 'action',
-                                                  'client_print_multi',
-                                                  doc.name,
-                                                  [doc.model_id.model],
-                                                  value,
-                                                  replace=False,
-                                                  isobject=True)
+            self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
+        registered_report(report_name)
 
     def action_values(self, cr, uid, report_id, context=None):
         """
@@ -383,8 +362,10 @@ class jasper_document(orm.Model):
         try:
             js = jasperlib.Jasper(jss.host, jss.port, jss.user, jss['pass'])
             js.auth()
-            uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname,
-                                                          curr.report_unit)
+            if curr.any_database:
+                uri = compose_path('/openerp/bases/%s') % ( curr.report_unit)
+            else:
+                uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname, curr.report_unit)
             envelop = js.run_report(uri=uri, output='PDF', params={})
             js.send(jasperlib.SoapEnv('runReport', envelop).output())
         except jasperlib.ServerNotFound:
@@ -476,8 +457,7 @@ class jasper_document_parameter(orm.Model):
         'name': fields.char('Name', size=32, help='Name of the jasper parameter, the prefix must be OERP_', required=True),  # noqa
         'code': fields.char('Code', size=256, help='Enter the code to retrieve data', required=True),  # noqa
         'enabled': fields.boolean('Enabled'),
-        'document_id': fields.many2one('jasper.document', 'Document',
-                                       required=True),
+        'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
     }
 
     _defaults = {
@@ -490,12 +470,9 @@ class jasper_document_label(orm.Model):
     _description = 'Manage label in document, for different language'
 
     _columns = {
-        'name': fields.char('Parameter', size=64, required=True,
-                            help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter'),  # noqa
-        'value': fields.char('Value', size=256, required=True, translate=True,
-                             help='Name of the label, this field must be translate in all languages available in the database'),  # noqa
-        'document_id': fields.many2one('jasper.document', 'Document',
-                                       required=True),
+        'name': fields.char('Parameter', size=64, help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter', required=True),
+        'value': fields.char('Value', size=256, help='Name of the label, this field must be translate in all languages available in the database', required=True, translate=True),
+        'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
     }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

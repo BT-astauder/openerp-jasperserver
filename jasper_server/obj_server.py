@@ -27,9 +27,16 @@ from openerp.osv import orm
 from openerp.osv import fields
 from openerp.tools import ustr
 from openerp.tools.translate import _
+from openerp.modules import get_module_path
+import openerp
+import time
+import os
 import jasperlib
 
+from osv.orm import browse_null
+
 from lxml.etree import Element, tostring
+from openerp.addons.jasper_server.report.report_exception import EvalError
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -152,7 +159,7 @@ class JasperServer(orm.Model):
         if not irm_ids:
             log_error('Model %s not found !' % relation)
 
-        ##
+        # #
         # We must ban many model
         #
         ban = (
@@ -164,7 +171,7 @@ class JasperServer(orm.Model):
             'ir.actions.url', 'ir.ui.view', 'ir.sequence',
         )
 
-        ##
+        # #
         # If generate_xml was called by a relation field, we must keep
         # the original filename
         ir_model = irm.read(cr, uid, irm_ids[0])
@@ -211,14 +218,9 @@ class JasperServer(orm.Model):
                 elif type == 'many2one':
                     if not isinstance(value, int):
                         value = value and value[0] or 0
-                    # log_error('Current: %r Old: %r' %
-                    # (mod_fields[f]['relation'], relation))
-                    if depth > 0 and value and \
-                       mod_fields[f]['relation'] != old_relation and \
-                       mod_fields[f]['relation'] not in ban:
-                        e = self.generate_xml(
-                            cr, uid, mod_fields[f]['relation'], value,
-                            depth - 1, relation, field)
+                    # log_error('Current: %r Old: %r' % (mod_fields[f]['relation'], relation))
+                    if depth > 0 and value and mod_fields[f]['relation'] != old_relation and mod_fields[f]['relation'] not in ban:
+                        e = self.generate_xml(cr, uid, mod_fields[f]['relation'], value, depth - 1, relation, field)
                     else:
                         e.set('id', '%r' % value or 0)
                         if not isinstance(value, int):
@@ -239,6 +241,102 @@ class JasperServer(orm.Model):
                     log_error('OUPS un oubli %s: %s(%s)' % (field, name, type))
                 x.append(e)
         return x
+
+    def generatorYAML(self, cr, uid, jasper_document, current_object, user_company, user, context=None):
+
+        import yaml
+        root = Element('data')
+        for yaml_object in jasper_document.yaml_object_ids:
+
+            model_obj = self.pool.get(yaml_object.model.model)
+            model_ids = model_obj.search(cr, uid,
+                                         args=eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
+                                         offset=yaml_object.offset,
+                                         limit=yaml_object.limit if yaml_object.limit > 0 else None,
+                                         order=yaml_object.order,
+                                         context=context)
+
+            xmlField = Element('object')
+            xmlField.set("name", yaml_object.name)
+            xmlField.set("model", yaml_object.model.name)
+            for object in model_obj.browse(cr, uid, model_ids, context):
+                self.generate_from_yaml(cr, uid, xmlField, object, yaml.load(yaml_object.fields), context=context)
+
+            root.append(xmlField)
+
+        return tostring(root, pretty_print=context.get('indent', False))
+
+
+    def generate_from_yaml(self, cr, uid, root, object, fields, prefix='', context=None):
+        """
+        Generate xml for an object recursively
+        """
+
+        if prefix:
+            prefix = prefix + '_'
+
+        for field in fields:
+            xmlField = Element("DummyInitialisation")
+
+            if type(field) is dict:
+                fieldname = field.keys()[0]
+                value = field.values()[0]
+                xmlField = Element(prefix + fieldname)
+
+                if type(value) is list:
+                    if isinstance(object[fieldname], list):
+                        for objectListElement in object[fieldname]:
+                            xmlContainerField = Element("container")
+                            xmlContainerField.set("name", fieldname)
+                            self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
+                            
+                            xmlField.append(xmlContainerField)
+                    else:
+                        if not isinstance(object[fieldname], browse_null):
+                            self.generate_from_yaml(cr, uid, xmlField, object[fieldname], value, prefix + fieldname, context=context)
+                else:
+                    # set element content
+                    xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[fieldname])
+
+            else:
+                xmlField = Element(prefix + field)
+
+                # set element content
+                xmlField.text = ''
+                if object:
+                    xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[field])
+
+            root.append(xmlField)
+        return
+
+    def _format_element(self, element, field_type, field_value):
+
+        if field_type in ('char', 'text', 'selection'):
+            return field_value and unicode(field_value) or ''
+        elif field_type == 'integer':
+            return field_value and str(field_value) or '0'
+        elif field_type == 'float':
+            return field_value and str(field_value) or '0.0'
+        elif field_type == 'date':
+            element.set('format', 'yyyy-MM-dd HH:mm:ss')
+            if field_value:
+                return field_value + ' 00:00:00' or ''
+            else:
+                return ''
+        elif field_type == 'datetime':
+            element.set('format', 'yyyy-MM-dd HH:mm:ss')
+            return field_value or ''
+        elif field_type == 'boolean':
+            return str(field_value)
+        elif field_type == 'many2one':
+            raise EvalError(_('Many2One'), _('You cannot use many2one directly.\n\nDefine subelement for: "%s"') % str(element.tag))
+        elif field_type in ('binary', 'reference'):
+            if field_value:
+                return str(field_value)
+            else:
+                return ''
+        else:
+            log_error('OUPS un oubli %s: %s(%s)' % (field_type, element, field_value))
 
     def generator(self, cr, uid, model, id, depth, context=None):
         root = Element('data')

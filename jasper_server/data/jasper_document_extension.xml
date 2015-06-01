@@ -78,5 +78,11 @@
             <field name="extension">flash</field>
         </record>
 
+        <record model="jasper.document.extension" id="jasper_document_extension_10">
+            <field name="jasper_code">XML</field>
+            <field name="name">XML</field>
+            <field name="extension">xml</field>
+        </record>
+
     </data>
 </openerp>
