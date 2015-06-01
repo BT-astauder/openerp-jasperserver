@@ -69,7 +69,7 @@ In collaboration with Eric Vernichon (from Everlibre)
 
     ],
     'demo': [
-        'demo/jasper_document.xml',
+        #'demo/jasper_document.xml',
     ],
     'installable': True,
     'auto_install': False,
