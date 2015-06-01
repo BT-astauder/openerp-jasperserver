@@ -33,7 +33,7 @@ import time
 import os
 import jasperlib
 
-from osv.orm import browse_null
+from openerp.osv.orm import browse_null
 
 from lxml.etree import Element, tostring
 from openerp.addons.jasper_server.report.report_exception import EvalError
