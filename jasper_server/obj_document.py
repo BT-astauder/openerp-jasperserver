@@ -28,7 +28,7 @@ from openerp.osv import orm
 from openerp.osv import fields
 from openerp.tools.sql import drop_view_if_exists
 from openerp.tools.translate import _
-from jasper_server.common import registered_report, KNOWN_PARAMETERS
+from openerp.addons.jasper_server.common import KNOWN_PARAMETERS
 from StringIO import StringIO
 from lxml import etree
 import base64
@@ -142,12 +142,6 @@ class jasper_document(orm.Model):
         'message_simple': False,
     }
 
-    def __init__(self, pool, cr):
-        """
-        Automaticaly registered service at server starts
-        """
-        super(jasper_document, self).__init__(pool, cr)
-
     def make_action(self, cr, uid, id, context=None):
         """
         Create an entry in ir_actions_report_xml
@@ -186,19 +180,8 @@ class jasper_document(orm.Model):
             cr.execute("""UPDATE jasper_document SET report_id=%s
                            WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
-<<<<<<< HEAD
             self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
         registered_report(report_name)
-=======
-            self.pool.get('ir.model.data').ir_set(cr, uid, 'action',
-                                                  'client_print_multi',
-                                                  doc.name,
-                                                  [doc.model_id.model],
-                                                  value,
-                                                  replace=False,
-                                                  isobject=True)
-        registered_report('jasper.report_%d' % (doc.id,))
->>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
 
     def action_values(self, cr, uid, report_id, context=None):
         """
@@ -379,15 +362,10 @@ class jasper_document(orm.Model):
         try:
             js = jasperlib.Jasper(jss.host, jss.port, jss.user, jss['pass'])
             js.auth()
-<<<<<<< HEAD
             if curr.any_database:
                 uri = compose_path('/openerp/bases/%s') % ( curr.report_unit)
             else:
                 uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname, curr.report_unit)
-=======
-            uri = compose_path('/openerp/bases/%s/%s') % (cr.dbname,
-                                                          curr.report_unit)
->>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
             envelop = js.run_report(uri=uri, output='PDF', params={})
             js.send(jasperlib.SoapEnv('runReport', envelop).output())
         except jasperlib.ServerNotFound:
@@ -479,12 +457,7 @@ class jasper_document_parameter(orm.Model):
         'name': fields.char('Name', size=32, help='Name of the jasper parameter, the prefix must be OERP_', required=True),  # noqa
         'code': fields.char('Code', size=256, help='Enter the code to retrieve data', required=True),  # noqa
         'enabled': fields.boolean('Enabled'),
-<<<<<<< HEAD
         'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
-=======
-        'document_id': fields.many2one('jasper.document', 'Document',
-                                       required=True),
->>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
     }
 
     _defaults = {
@@ -497,18 +470,9 @@ class jasper_document_label(orm.Model):
     _description = 'Manage label in document, for different language'
 
     _columns = {
-<<<<<<< HEAD
         'name': fields.char('Parameter', size=64, help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter', required=True),
         'value': fields.char('Value', size=256, help='Name of the label, this field must be translate in all languages available in the database', required=True, translate=True),
         'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
-=======
-        'name': fields.char('Parameter', size=64, required=True,
-                            help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter'),  # noqa
-        'value': fields.char('Value', size=256, required=True, translate=True,
-                             help='Name of the label, this field must be translate in all languages available in the database'),  # noqa
-        'document_id': fields.many2one('jasper.document', 'Document',
-                                       required=True),
->>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
     }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

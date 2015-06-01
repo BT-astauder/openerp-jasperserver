@@ -25,7 +25,7 @@
 # from openerp.osv import osv
 from openerp.osv import orm
 from openerp.osv import fields
-from openerp.tools import ustr, config
+from openerp.tools import ustr
 from openerp.tools.translate import _
 from openerp.modules import get_module_path
 import openerp
