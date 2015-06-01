@@ -22,7 +22,7 @@
 #
 ##############################################################################
 
-import pooler
+from openerp import pooler
 import os
 import time
 import base64

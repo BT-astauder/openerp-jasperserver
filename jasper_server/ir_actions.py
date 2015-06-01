@@ -23,7 +23,7 @@
 ##############################################################################
 
 from openerp.osv import osv, fields
-from jasper_server.common import registered_report
+from common import registered_report
 import logging
 import importlib
 from openerp.report import report_sxw

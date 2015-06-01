@@ -22,7 +22,6 @@
 #
 ##############################################################################
 
-import ir_actions_wizard
 import jasper_yaml_object
 import obj_server
 import obj_document
