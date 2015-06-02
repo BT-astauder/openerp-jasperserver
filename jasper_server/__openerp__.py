@@ -46,6 +46,7 @@ This module required library to work properly
 
 # pip install httplib2 (>= 0.6.0)
 # pip install pyPdf (>= 1.13)
+# pip install python-dime 
 
 
 In collaboration with Eric Vernichon (from Everlibre)
