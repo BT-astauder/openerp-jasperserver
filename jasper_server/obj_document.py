@@ -34,6 +34,7 @@ from lxml import etree
 import base64
 import jasperlib
 import logging
+from common import registered_report
 
 _logger = logging.getLogger(__name__)
 
@@ -181,7 +182,9 @@ class jasper_document(orm.Model):
                            WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
             self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
-        registered_report(report_name)
+# TO-DO : Hack by mara 1
+#        registered_report(report_name)
+# =======================
 
     def action_values(self, cr, uid, report_id, context=None):
         """
