@@ -283,17 +283,16 @@ class JasperServer(orm.Model):
                 value = field.values()[0]
                 xmlField = Element(prefix + fieldname)
 
-                if type(value) is list:
-                    if isinstance(object[fieldname], list):
-                        for objectListElement in object[fieldname]:
-                            xmlContainerField = Element("container")
-                            xmlContainerField.set("name", fieldname)
-                            self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
-                            
-                            xmlField.append(xmlContainerField)
-                    else:
-                        if not isinstance(object[fieldname], browse_null):
-                            self.generate_from_yaml(cr, uid, xmlField, object[fieldname], value, prefix + fieldname, context=context)
+                if object._model._all_columns[fieldname].column._type in ['one2many','many2many']:  # o2m, m2m
+                    for objectListElement in object[fieldname]:
+                        xmlContainerField = Element("container")
+                        xmlContainerField.set("name", fieldname)
+                        self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
+                        
+                        xmlField.append(xmlContainerField)
+                elif object._model._all_columns[fieldname].column._type == 'many2one':  # m2o
+                    if not isinstance(object[fieldname], browse_null):
+                        self.generate_from_yaml(cr, uid, xmlField, object[fieldname], value, prefix + fieldname, context=context)
                 else:
                     # set element content
                     xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[fieldname])
