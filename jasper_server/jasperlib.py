@@ -67,11 +67,7 @@ class UnknownFormat(JasperException):
     pass
 
 
-<<<<<<< HEAD
-## Create some XML element to resourceDescriptor
-=======
 # Create some XML element to resourceDescriptor
->>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
 class Request(etree.ElementBase):
     TAG = 'request'
 
@@ -224,14 +220,10 @@ class Jasper(object):
         # Add query parameters
         for k, v in params.items():
             p = etree.SubElement(rd, 'parameter', name=k)
-<<<<<<< HEAD
-            p.text = str(v).encode('ascii', 'xmlcharrefreplace')
-=======
             if isinstance(v, basestring):
                 p.text = v
             else:
                 p.text = str(v)
->>>>>>> 1cdab8d27baa219bace7e77c156e0c7fcc33095b
 
         rq.append(rd)
         return etree.tostring(rq, pretty_print=True)
