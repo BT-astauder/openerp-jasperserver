@@ -38,6 +38,7 @@ from pyPdf import PdfFileWriter, PdfFileReader
 from openerp.addons.jasper_server import jasperlib as jslib
 from openerp import netsvc
 
+from xml.etree import ElementTree as et
 
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
@@ -78,7 +79,10 @@ def log_debug(message):
     if _logger.isEnabledFor(logging.DEBUG):
         _logger.debug(' %s' % message)
 
-
+class hashabledict(dict):
+        def __hash__(self):
+            return hash(tuple(sorted(self.items())))
+        
 class Report(object):
     """
     compose the SOAP Query, launch the query and return the value
@@ -255,7 +259,8 @@ class Report(object):
         language = context.get('lang', 'en_US')
         if current_document.lang:
             language = self._eval_lang(cur_obj, current_document)
-            language = language[0][0] 
+            if type(language) is not str:  # type is str if language is given directly as string 'de_DE' for instance
+                language = language[0][0] 
 
         # Check if we can launch this reports
         # Test can be simple, or un a function
@@ -487,6 +492,37 @@ class Report(object):
                     context=context)
 
         return (content, duplicate)
+    
+    # Function to merge two XML
+    # http://stackoverflow.com/questions/14878706/merge-xml-files-with-nested-elements-without-external-libraries
+    def combine_element(self, one, other):
+        """
+        This function recursively updates either the text or the children
+        of an element if another element is found in `one`, or adds it
+        from `other` if not found.
+        """
+        # Create a mapping from tag name to element, as that's what we are fltering with
+        mapping = {(el.tag, hashabledict(el.attrib)): el for el in one}
+        for el in other:
+            if len(el) == 0:
+                # Not nested
+                try:
+                    # Update the text
+                    mapping[(el.tag, hashabledict(el.attrib))].text = el.text
+                except KeyError:
+                    # An element with this name is not in the mapping
+                    mapping[(el.tag, hashabledict(el.attrib))] = el
+                    # Add it
+                    one.append(el)
+            else:
+                try:
+                    # Recursively process the element, and update it in the same way
+                    self.combine_element(mapping[(el.tag, hashabledict(el.attrib))], el)
+                except KeyError:
+                    # Not in the mapping
+                    mapping[(el.tag, hashabledict(el.attrib))] = el
+                    # Just add it
+                    one.append(el)
 
     def execute(self):
         """Launch the report and return it"""
@@ -499,6 +535,7 @@ class Report(object):
         # #
         # For each IDS, launch a query, and return only one result
         #
+        
         pdf_list = []
         doc_ids = []
         if self.service:
@@ -548,6 +585,7 @@ class Report(object):
                 uri = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, doc.report_unit)
             self.attrs['params'] = (doc.format, uri, doc.mode, doc.depth, {})
 
+        all_xml = []
         one_check = {}
         one_check[doc.id] = False
         content = ''
@@ -571,6 +609,7 @@ class Report(object):
                         continue
                     (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
                     one_check[doc.id] = True
+                    all_xml.append(content)
         else:
             if doc.mode == 'multi' and self.outputFormat == 'PDF':
                 for d in doc.child_ids:
@@ -591,6 +630,24 @@ class Report(object):
         # ONLY PDF CAN BE MERGE!
         if self.outputFormat.upper() != 'PDF':
             self.obj = external_pdf(content, self.outputFormat)
+            
+            # #
+            # # We use function combine_elements to merge all XML in unique file
+            # #
+            if  self.outputFormat == 'XML':
+                # To merge XML, result_xml wil contain the XML merged till now. For first instance, it just contains general structure
+                result_xml = "<data><object></object></data>"
+                for item in all_xml:
+                    one = et.fromstring(result_xml)
+                    other = et.fromstring(item)
+                    # Merging two XML strings that were converted to XML Elements 
+                    self.combine_element(one, other)
+                    
+                    # Updating content of self.obj, that is in the end what we return
+                    self.obj.content =  et.tostring(one)                       
+                    # Update resulting XML string for next iteration
+                    result_xml = self.obj.content   
+               
             return (self.obj.content, self.outputFormat)
 
         def find_pdf_attachment(pdfname, current_obj):

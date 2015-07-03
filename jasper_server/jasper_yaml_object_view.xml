@@ -26,6 +26,8 @@
                             <group>
                                 <field name="limit" />
                                 <field name="order" />
+                                <field name="yaml_user_id" />
+                                <field name="yaml_context" />
                             </group>
                         </group>
                         

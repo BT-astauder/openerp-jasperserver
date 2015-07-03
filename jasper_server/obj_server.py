@@ -32,6 +32,7 @@ import openerp
 import time
 import os
 import jasperlib
+import ast
 
 from openerp.osv.orm import browse_null
 
@@ -249,20 +250,31 @@ class JasperServer(orm.Model):
         for yaml_object in jasper_document.yaml_object_ids:
 
             model_obj = self.pool.get(yaml_object.model.model)
-            model_ids = model_obj.search(cr, uid,
+            user_id = uid
+            if yaml_object.yaml_user_id.id:
+                user_id = yaml_object.yaml_user_id.id
+            if yaml_object.yaml_context:
+                yaml_context = ast.literal_eval( yaml_object.yaml_context)
+                for key,value in yaml_context.items():
+                    context[key] = value
+                
+            model_ids = model_obj.search(cr, user_id,
                                          args=eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
                                          offset=yaml_object.offset,
                                          limit=yaml_object.limit if yaml_object.limit > 0 else None,
                                          order=yaml_object.order,
                                          context=context)
 
-            xmlField = Element('object')
-            xmlField.set("name", yaml_object.name)
-            xmlField.set("model", yaml_object.model.name)
-            for object in model_obj.browse(cr, uid, model_ids, context):
-                self.generate_from_yaml(cr, uid, xmlField, object, yaml.load(yaml_object.fields), context=context)
+            xmlObject = Element('object')        
+            xmlObject.set("name", yaml_object.name)
+            xmlObject.set("model", yaml_object.model.name)
+            for object in model_obj.browse(cr, user_id, model_ids, context):
+                xmlField = Element('container')                
+                xmlField.set("name", object.name)
+                self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=context)
+                xmlObject.append(xmlField)
 
-            root.append(xmlField)
+            root.append(xmlObject)
 
         return tostring(root, pretty_print=context.get('indent', False))
 

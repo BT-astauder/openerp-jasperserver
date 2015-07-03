@@ -33,5 +33,7 @@ class jasper_yaml_object(osv.osv):
         'offset': fields.integer('Offset'),
         'limit': fields.integer('Limit'),
         'order': fields.char('Order', size=128),
+        'yaml_context': fields.char('Context',),
+        'yaml_user_id': fields.many2one('res.users', string='User'),
         'fields': fields.text('Fields in YAML'),
     }

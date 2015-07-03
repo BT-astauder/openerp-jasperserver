@@ -271,9 +271,9 @@ if __name__ == '__main__':
         js = Jasper(tjs_host, int(tjs_port), tjs_user, tjs_pass)
         js.auth()
     except ServerNotFound:
-        print 'Error, server not found %s %d' % (js.host, js.port)
+        raise ServerNotFound('Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        print 'Error, Authentification failed for %s/%s' % (js.user, js.pwd)
+        raise AuthError('Error, Authentification failed for %s/%s' % (js.user, js.pwd))
 
     params = {
         'OERP_COMPANY_ID': 1,
@@ -288,9 +288,9 @@ if __name__ == '__main__':
         f.write(a['data'])
         f.close()
     except ServerNotFound:
-        print 'Error, server not found %s %d' % (js.host, js.port)
+        raise ServerNotFound('Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        print 'Error, Authentification failed for %s/%s' % (js.user, js.pwd)
+        raise AuthError('Error, Authentification failed for %s/%s' % (js.user, js.pwd))
 
     try:
         envelop = js.run_report(uri='/reports/samples/AllAccounts',
@@ -300,11 +300,11 @@ if __name__ == '__main__':
         f.write(a['data'])
         f.close()
     except ServerNotFound:
-        print 'Error, server not found %s %d' % (js.host, js.port)
+        raise ServerNotFound('Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        print 'Error, Authentification failed for %s/%s' % (js.user, js.pwd)
+        raise AuthError('Error, Authentification failed for %s/%s' % (js.user, js.pwd))
     except ServerError, e:
-        print str(e)
+        raise ServerError( str(e))
 
     try:
         envelop = js.run_report(uri='/reports/samples/AllAccounts',
@@ -314,11 +314,11 @@ if __name__ == '__main__':
         f.write(a['data'])
         f.close()
     except ServerNotFound:
-        print 'Error, server not found %s %d' % (js.host, js.port)
+        raise ServerNotFound( 'Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        print 'Error, Authentification failed for %s/%s' % (js.user, js.pwd)
+        raise AuthError( 'Error, Authentification failed for %s/%s' % (js.user, js.pwd))
     except ServerError, e:
-        print str(e)
+        raise ServerError( str(e))
 
     # Check unknown format
     try:
@@ -329,9 +329,9 @@ if __name__ == '__main__':
         f.write(a['data'])
         f.close()
     except ServerNotFound:
-        print 'Error, server not found %s %d' % (js.host, js.port)
+        raise ServerNotFound( 'Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        print 'Error, Authentification failed for %s/%s' % (js.user, js.pwd)
+        raise AuthError( 'Error, Authentification failed for %s/%s' % (js.user, js.pwd))
     except UnknownFormat as e:
         pass
 
