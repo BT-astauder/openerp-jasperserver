@@ -247,36 +247,39 @@ class JasperServer(orm.Model):
 
         import yaml
         root = Element('data')
+        
         for yaml_object in jasper_document.yaml_object_ids:
-
+            ctx = context.copy()
+        
             model_obj = self.pool.get(yaml_object.model.model)
             user_id = uid
-            if yaml_object.yaml_user_id.id:
-                user_id = yaml_object.yaml_user_id.id
-            if yaml_object.yaml_context:
-                yaml_context = ast.literal_eval( yaml_object.yaml_context)
+            if yaml_object.user_id.id:
+                user_id = yaml_object.user_id.id
+            if yaml_object.context:
+                yaml_context = ast.literal_eval( yaml_object.context)
+                
                 for key,value in yaml_context.items():
-                    context[key] = value
+                    ctx[key] = value
                 
             model_ids = model_obj.search(cr, user_id,
                                          args=eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
                                          offset=yaml_object.offset,
                                          limit=yaml_object.limit if yaml_object.limit > 0 else None,
                                          order=yaml_object.order,
-                                         context=context)
+                                         context=ctx)
 
             xmlObject = Element('object')        
             xmlObject.set("name", yaml_object.name)
             xmlObject.set("model", yaml_object.model.name)
-            for object in model_obj.browse(cr, user_id, model_ids, context):
+            for object in model_obj.browse(cr, user_id, model_ids, ctx):
                 xmlField = Element('container')                
                 xmlField.set("name", object.name)
-                self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=context)
+                self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=ctx)
                 xmlObject.append(xmlField)
 
             root.append(xmlObject)
 
-        return tostring(root, pretty_print=context.get('indent', False))
+        return tostring(root, pretty_print=ctx.get('indent', False))
 
 
     def generate_from_yaml(self, cr, uid, root, object, fields, prefix='', context=None):

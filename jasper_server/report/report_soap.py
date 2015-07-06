@@ -258,8 +258,8 @@ class Report(object):
         # If language is set in the jasper document we get it, otherwise language is by default American English 
         language = context.get('lang', 'en_US')
         if current_document.lang:
-            language = self._eval_lang(cur_obj, current_document)
-            if type(language) is not str:  # type is str if language is given directly as string 'de_DE' for instance
+            language = self._eval_lang(cur_obj, current_document)            
+            if isinstance(language, list):   # type is str if language is given directly as string 'de_DE' for instance
                 language = language[0][0] 
 
         # Check if we can launch this reports
