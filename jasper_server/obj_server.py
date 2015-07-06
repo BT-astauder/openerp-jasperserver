@@ -274,7 +274,10 @@ class JasperServer(orm.Model):
             for object in model_obj.browse(cr, user_id, model_ids, ctx):
                 xmlField = Element('container')                
                 xmlField.set("name", object.name)
-                self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=ctx)
+                try:
+                    self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=ctx)
+                except:
+                    raise
                 xmlObject.append(xmlField)
 
             root.append(xmlObject)

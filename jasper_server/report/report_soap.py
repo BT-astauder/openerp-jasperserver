@@ -26,6 +26,7 @@ import os
 import time
 import base64
 import logging
+from openerp.osv.osv import except_osv
 
 from openerp import pooler
 from openerp.report.render import render
@@ -39,6 +40,10 @@ from openerp.addons.jasper_server import jasperlib as jslib
 from openerp import netsvc
 
 from xml.etree import ElementTree as et
+import sys
+import traceback
+
+from openerp import tools
 
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
@@ -111,6 +116,15 @@ class Report(object):
         # If no context, retrieve one on the current user
         self.context = context or self.pool.get('res.users').context_get(
             cr, uid, uid)
+    
+    def add_error_message(self, doc, error_title, error_message, context=None):
+        new_error_txt = ''
+        old_error_txt = doc.error_text
+        if old_error_txt:
+            new_error_txt = old_error_txt
+        new_error_txt = new_error_txt + '\n'+ time.strftime("%d/%m/%Y %H:%M:%S") + ' ' + self.pool.get('res.users').browse(self.cr,self.uid,self.uid,context=context).name+ ' => ' + error_title+ error_message
+        return self.pool.get('jasper.document').write(self.cr, 1, [doc.id],{'error_text':new_error_txt}, context=context)
+                        
 
     def add_attachment(self, res_id, aname, content, mimetype='binary',
                        context=None):
@@ -396,8 +410,11 @@ class Report(object):
                 #Using language coming from the jasper document if exists 
                 my_context = context.copy()
                 my_context['lang'] = language
+                try:
+                    d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
+                except:
+                    raise
                 
-                d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
                 if current_document.debug:
                     return (d_xml, 1)
                 d_par['xml_data'] = d_xml
@@ -568,6 +585,7 @@ class Report(object):
             js_ids = self.js_obj.search(self.cr, self.uid,
                                         [('enable', '=', True)])
             if not len(js_ids):
+                self.add_error_message(doc, _('Configuration Error:'),_('No JasperServer configuration found!'), context=context)
                 raise JasperException(_('Configuration Error'),
                                       _('No JasperServer configuration found!'))  # noqa
 
@@ -607,7 +625,20 @@ class Report(object):
                 else:
                     if doc.only_one and one_check.get(doc.id, False):
                         continue
-                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    try:
+                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    except Exception as e:
+                        
+                        type_, value_, traceback_ = sys.exc_info()
+                        ex = traceback.format_exception(type_, value_, traceback_)
+                        
+                        #self.add_error_message(doc,e[0],e[1], context=context)
+                        ex_all = e[0]+' : ' + e[1] +'\n'
+                        for item in ex:
+                            ex_all = ex_all+item
+                        self.add_error_message(doc,e[0],ex_all, context=context)
+                        
+                        raise except_osv(e[0],e[1])
                     one_check[doc.id] = True
                     all_xml.append(content)
         else:
@@ -636,7 +667,7 @@ class Report(object):
             # #
             if  self.outputFormat == 'XML':
                 # To merge XML, result_xml wil contain the XML merged till now. For first instance, it just contains general structure
-                result_xml = "<data><object></object></data>"
+                result_xml = "<data></data>"
                 for item in all_xml:
                     one = et.fromstring(result_xml)
                     other = et.fromstring(item)
