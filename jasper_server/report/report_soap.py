@@ -43,8 +43,6 @@ from xml.etree import ElementTree as et
 import sys
 import traceback
 
-from openerp import tools
-
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
 # #
