@@ -22,6 +22,12 @@
 #
 ##############################################################################
 
+from openerp import netsvc        
+import logging        
+from jasper import report_jasper        
+        
+_logger = logging.getLogger(__name__)
+
 KNOWN_PARAMETERS = [
     'OERP_ACTIVE_ID', 'OERP_ACTIVE_IDS',
     'OERP_COMPANY_NAME', 'OERP_COMPANY_LOGO', 'OERP_COMPANY_HEADER1',
@@ -30,5 +36,13 @@ KNOWN_PARAMETERS = [
     'OERP_COMPANY_ZIP', 'OERP_COMPANY_CITY', 'OERP_COMPANY_COUNTRY',
     'OERP_COMPANY_PHONE', 'OERP_COMPANY_FAX', 'OERP_COMPANY_MAIL',
 ]
+
+def registered_report(name):        
+    """ Register dynamicaly the report for each entry"""        
+    gname = 'report.' + name        
+    if gname in netsvc.Service._services:        
+        return        
+    report_jasper(gname)        
+    _logger.info('Register the jasper report service [%s]' % name)
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
