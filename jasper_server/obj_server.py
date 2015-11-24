@@ -353,6 +353,7 @@ class JasperServer(orm.Model):
                         for objectListElement in object[fieldname]:
                             xmlContainerField = Element("container")
                             xmlContainerField.set("name", fieldname)
+                            xmlContainerField.set("id", str(objectListElement['id']))
                             self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
                             
                             xmlField.append(xmlContainerField)
@@ -369,7 +370,13 @@ class JasperServer(orm.Model):
                 # set element content
                 xmlField.text = ''
                 if object:
-                    xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[field])
+                    if field in ['id', 'create_uid', 'write_uid']:
+#                                 'parent_id', 'parent_left', 'parent_right']:
+                        xmlField.text = self._format_element(xmlField, 'integer', object[field])
+                    elif field in ['create_date', 'write_date']:
+                        xmlField.text = self._format_element(xmlField, 'datetime', object[field])
+                    else:
+                        xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[field])
 
             root.append(xmlField)
         return
