@@ -626,17 +626,20 @@ class Report(object):
                     try:
                         (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
                     except Exception as e:
-                        
+
                         type_, value_, traceback_ = sys.exc_info()
                         ex = traceback.format_exception(type_, value_, traceback_)
-                        
+
                         #self.add_error_message(doc,e[0],e[1], context=context)
-                        ex_all = e[0]+' : ' + e[1] +'\n'
-                        for item in ex:
-                            ex_all = ex_all+item
-                        self.add_error_message(doc,e[0],ex_all, context=context)
-                        
-                        raise except_osv(e[0],e[1])
+                        if isinstance(e,list):
+                            ex_all = e[0]+' : ' + e[1] +'\n'
+                            for item in ex:
+                                ex_all = ex_all+item
+                            self.add_error_message(doc,e[0],ex_all, context=context)
+                            raise except_osv(e[0],e[1])
+                        else:
+                            self.add_error_message(doc,e.title,e.message.message, context=context)
+                            raise except_osv(e.title,e.message.message)
                     one_check[doc.id] = True
                     all_xml.append(content)
         else:
