@@ -45,7 +45,7 @@ import traceback
 
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
-# #
+##
 # If cStringIO is available, we use it
 try:
     from cStringIO import StringIO
@@ -62,14 +62,14 @@ class external_pdf(render):
     def _render(self):
         return self.content
 
-    def set_output_type(self, file_format):
+    def set_output_type(self, format):
         """
         Change the format of the file
 
         :param format: file format (eg: pdf)
         :type  format: str
         """
-        self.output_type = file_format
+        self.output_type = format
 
     def get_output_type(self,):
         """
@@ -270,7 +270,7 @@ class Report(object):
         # If language is set in the jasper document we get it, otherwise language is by default American English 
         language = context.get('lang', 'en_US')
         if current_document.lang:
-            language = self._eval_lang(cur_obj, current_document)            
+            language = self._eval_lang(cur_obj, current_document, context=context)            
             if isinstance(language, list):   # type is str if language is given directly as string 'de_DE' for instance
                 language = language[0][0] 
 
@@ -485,19 +485,16 @@ class Report(object):
             except Exception as e:
                 raise JasperException(_('Error'), e)
 
-            # ##
-            # # Store the content in ir.attachment if ask
+            # Store the content in ir.attachment if ask
             if aname:
                 self.add_attachment(ex, aname, content, mimetype=mimetype,
                                     context=self.context)
 
-            # ##
-            # # Execute the before query if it available
-            # #
+            # Execute the before query if it available
             if js_conf.get('after'):
                 self.cr.execute(js_conf['after'], {'id': ex})
 
-            # # Update the number of print on object
+            # Update the number of print on object
             fld = self.model_obj.fields_get(self.cr, self.uid)
             if 'number_of_print' in fld:
                 self.model_obj.write(
@@ -547,10 +544,9 @@ class Report(object):
         log_debug('DATA:')
         log_debug('\n'.join(['%s: %s' % (x, self.data[x]) for x in self.data]))
 
-        # #
+        ##
         # For each IDS, launch a query, and return only one result
         #
-        
         pdf_list = []
         doc_ids = []
         if self.service:
@@ -655,7 +651,7 @@ class Report(object):
                     one_check[d.id] = True
             else:
                 if not (doc.only_one and one_check.get(doc.id, False)):
-                    (content, duplicate) = self._jasper_execute(0, doc, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
                     one_check[doc.id] = True
 
         # If format is not PDF, we return it directly
@@ -710,9 +706,7 @@ class Report(object):
 #        pdf_fo_begin = find_pdf_attachment(doc.pdf_begin, cur_obj)
 #        pdf_fo_ended = find_pdf_attachment(doc.pdf_ended, cur_obj)
 
-        # #
-        # # We use pyPdf to merge all PDF in unique file
-        # #
+        # We use pyPdf to merge all PDF in unique file
         c = StringIO()
         if len(pdf_list) > 1 or duplicate > 1:
             # content = ''

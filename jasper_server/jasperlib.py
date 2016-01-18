@@ -67,7 +67,7 @@ class UnknownFormat(JasperException):
     pass
 
 
-## Create some XML element to resourceDescriptor
+# Create some XML element to resourceDescriptor
 class Request(etree.ElementBase):
     TAG = 'request'
 

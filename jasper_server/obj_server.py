@@ -160,7 +160,7 @@ class JasperServer(orm.Model):
         if not irm_ids:
             log_error('Model %s not found !' % relation)
 
-        # #
+        ##
         # We must ban many model
         #
         ban = (
@@ -172,7 +172,7 @@ class JasperServer(orm.Model):
             'ir.actions.url', 'ir.ui.view', 'ir.sequence',
         )
 
-        # #
+        ##
         # If generate_xml was called by a relation field, we must keep
         # the original filename
         ir_model = irm.read(cr, uid, irm_ids[0])
