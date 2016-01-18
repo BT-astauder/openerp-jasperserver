@@ -41,7 +41,7 @@ _logger = logging.getLogger(__name__)
 class IrActionReport(models.Model):
     _inherit = 'ir.actions.report.xml'
 
-	report_type = fields.Selection(selection_add=[('jasper', 'Jasper')])
+    report_type = fields.Selection(selection_add=[('jasper', 'Jasper')])
 
     def register_all(self, cursor, called_from_jasper_server_webkit=False):
         
@@ -86,16 +86,16 @@ class IrActionReport(models.Model):
         _logger.info('====[END REGISTER RML REPORT FOR JASPER REPORT]====================')
 
         return return_value
-
-    @classmethod
-    def _add_field(self, name, field):
-        res = super(IrActionReport, self)._add_field(name, field)
-
-        if name == 'report_type':
-            if 'jasper' not in zip(*field.selection)[0]:
-                field.selection.append(('jasper', 'Jasper'))
-
-        return res
+# 
+#     @classmethod
+#     def _add_field(self, name, field):
+#         res = super(IrActionReport, self)._add_field(name, field)
+# 
+#         if name == 'report_type':
+#             if 'jasper' not in zip(*field.selection)[0]:
+#                 field.selection.append(('jasper', 'Jasper'))
+# 
+#         return res
 
 
     def _lookup_report(self, cr, name):
