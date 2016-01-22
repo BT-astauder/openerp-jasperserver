@@ -647,7 +647,7 @@ class Report(object):
                         self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
                     else:
                         self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                    (content, duplicate) = self._jasper_execute(0, d, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
                     one_check[d.id] = True
             else:
                 if not (doc.only_one and one_check.get(doc.id, False)):

@@ -340,7 +340,7 @@ class JasperServer(orm.Model):
             return field_value and unicode(field_value) or ''
         elif field_type == 'integer':
             return field_value and str(field_value) or '0'
-        elif field_type == 'float':
+        elif field_type in ('float', 'monetary'):
             return field_value and str(field_value) or '0.0'
         elif field_type == 'date':
             element.set('format', 'yyyy-MM-dd HH:mm:ss')
