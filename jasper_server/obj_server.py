@@ -273,15 +273,20 @@ class JasperServer(orm.Model):
             xmlObject.set("model", yaml_object.model.name)
             for object in model_obj.browse(cr, user_id, model_ids, ctx):
                 xmlField = Element('container')    
-                
+
                 # take the field name if it exists in model and if name is not False
                 # else take the rec_name value if a rec_name was used
-                # else take simply the object id            
-                xmlField.set("name", object.name if 'name' in object._fields and object.name else
-                                model_obj.read(cr, uid, 
+                # else take simply the object id    
+                rec_name_value = model_obj.read(cr, uid, 
                                                [object.id], 
-                                               [object._rec_name])[0][object._rec_name] if object._rec_name else
-                                str(object.id))
+                                               [object._rec_name])[0][object._rec_name]
+
+                if 'name' in object._fields and object.name:
+                    xmlField.set("name", object.name)
+                elif object._rec_name and rec_name_value:
+                    xmlField.set("name", rec_name_value)
+                else:
+                    xmlField.set("name", str(object.id))
                 try:
                     self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=ctx)
                 except:
