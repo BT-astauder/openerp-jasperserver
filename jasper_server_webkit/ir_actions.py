@@ -40,10 +40,16 @@ class IrActionReport(osv.Model):
         """
         Register all jasper report
         """
+
+        # in case jasper_server_webkit is installed, it will do all,
+        # to make sure, that it is done after all webkit reports are installed
+        return_value = super(IrActionReport, self).register_all(cursor)
+
         _logger.info('====[REGISTER JASPER REPORT]========================')
         cursor.execute("SELECT id, report_name FROM ir_act_report_xml WHERE report_type = 'jasper'")
         records = cursor.dictfetchall()
         for record in records:
+            print "WEBKIT - Register1: " + str(record['report_name'])
             registered_report(record['report_name'])
         _logger.info('====[END REGISTER JASPER REPORT]====================')
 
@@ -70,10 +76,9 @@ class IrActionReport(osv.Model):
                 netsvc.Service._services['report.' + record['report_name']].parser = parser
                 _logger.info('Register the jasper report service [%s]' % record['report_name'])
 
-
         _logger.info('====[END REGISTER RML REPORT FOR JASPER REPORT]====================')
 
-        return True
+        return return_value
 
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
