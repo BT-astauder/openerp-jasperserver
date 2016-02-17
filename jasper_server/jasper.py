@@ -54,7 +54,7 @@ class report_jasper(report_int):
         try:
             return Report(self.name, cr, uid, ids, data, context).execute()
         except JasperException, e:
-            raise except_osv(e.title, e.message)
+            raise except_osv(e.name, e.value)
 
 report_jasper('report.print.jasper.server')
 
