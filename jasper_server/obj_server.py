@@ -326,7 +326,7 @@ class JasperServer(orm.Model):
                         self.generate_from_yaml(cr, uid, xmlField, object[fieldname], value, prefix + fieldname, context=context)
                 else:
                     # set element content
-                    xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[fieldname])
+                    xmlField.text = self._format_element(xmlField, object._model._fields[field].type, object[fieldname])
 
             else:
                 xmlField = Element(prefix + field)
@@ -334,7 +334,8 @@ class JasperServer(orm.Model):
                 # set element content
                 xmlField.text = ''
                 if object:
-                    xmlField.text = self._format_element(xmlField, object._model._all_columns[field].column._type, object[field])
+                    xmlField.text = self._format_element(xmlField, object._model._fields[field].type, object[field])
+
 
             root.append(xmlField)
         return
