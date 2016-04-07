@@ -26,6 +26,8 @@
                             <group>
                                 <field name="limit" />
                                 <field name="order" />
+                                <field name="user_id" />
+                                <field name="context" />
                             </group>
                         </group>
                         

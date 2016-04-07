@@ -32,6 +32,7 @@ import openerp
 import time
 import os
 import jasperlib
+import ast
 
 from openerp.osv.orm import browse_null
 
@@ -246,25 +247,55 @@ class JasperServer(orm.Model):
 
         import yaml
         root = Element('data')
+        
         for yaml_object in jasper_document.yaml_object_ids:
-
+            ctx = context.copy()
+        
             model_obj = self.pool.get(yaml_object.model.model)
-            model_ids = model_obj.search(cr, uid,
+            user_id = uid
+            if yaml_object.user_id.id:
+                user_id = yaml_object.user_id.id
+            if yaml_object.context:
+                yaml_context = ast.literal_eval( yaml_object.context)
+                
+                for key,value in yaml_context.items():
+                    ctx[key] = value
+                
+            model_ids = model_obj.search(cr, user_id,
                                          args=eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
                                          offset=yaml_object.offset,
                                          limit=yaml_object.limit if yaml_object.limit > 0 else None,
                                          order=yaml_object.order,
-                                         context=context)
+                                         context=ctx)
 
-            xmlField = Element('object')
-            xmlField.set("name", yaml_object.name)
-            xmlField.set("model", yaml_object.model.name)
-            for object in model_obj.browse(cr, uid, model_ids, context):
-                self.generate_from_yaml(cr, uid, xmlField, object, yaml.load(yaml_object.fields), context=context)
+            xmlObject = Element('object')        
+            xmlObject.set("name", yaml_object.name)
+            xmlObject.set("model", yaml_object.model.name)
+            for object in model_obj.browse(cr, user_id, model_ids, ctx):
+                xmlField = Element('container')    
 
-            root.append(xmlField)
+                # take the field name if it exists in model and if name is not False
+                # else take the rec_name value if a rec_name was used
+                # else take simply the object id    
+                rec_name_value = model_obj.read(cr, uid, 
+                                               [object.id], 
+                                               [object._rec_name])[0][object._rec_name]
 
-        return tostring(root, pretty_print=context.get('indent', False))
+                if 'name' in object._fields and object.name:
+                    xmlField.set("name", object.name)
+                elif object._rec_name and rec_name_value:
+                    xmlField.set("name", rec_name_value)
+                else:
+                    xmlField.set("name", str(object.id))
+                try:
+                    self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=ctx)
+                except:
+                    raise
+                xmlObject.append(xmlField)
+
+            root.append(xmlObject)
+
+        return tostring(root, pretty_print=ctx.get('indent', False))
 
 
     def generate_from_yaml(self, cr, uid, root, object, fields, prefix='', context=None):

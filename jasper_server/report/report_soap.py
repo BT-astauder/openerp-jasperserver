@@ -26,6 +26,7 @@ import os
 import time
 import base64
 import logging
+from openerp.osv.osv import except_osv
 
 from openerp import pooler
 from openerp.report.render import render
@@ -38,6 +39,9 @@ from pyPdf import PdfFileWriter, PdfFileReader
 from openerp.addons.jasper_server import jasperlib as jslib
 from openerp import netsvc
 
+from xml.etree import ElementTree as et
+import sys
+import traceback
 
 _logger = logging.getLogger('openerp.addons.jasper_server.report')
 
@@ -78,7 +82,10 @@ def log_debug(message):
     if _logger.isEnabledFor(logging.DEBUG):
         _logger.debug(' %s' % message)
 
-
+class hashabledict(dict):
+        def __hash__(self):
+            return hash(tuple(sorted(self.items())))
+        
 class Report(object):
     """
     compose the SOAP Query, launch the query and return the value
@@ -107,6 +114,15 @@ class Report(object):
         # If no context, retrieve one on the current user
         self.context = context or self.pool.get('res.users').context_get(
             cr, uid, uid)
+    
+    def add_error_message(self, doc, error_title, error_message, context=None):
+        new_error_txt = ''
+        old_error_txt = doc.error_text
+        if old_error_txt:
+            new_error_txt = old_error_txt
+        new_error_txt = new_error_txt + '\n'+ time.strftime("%d/%m/%Y %H:%M:%S") + ' ' + self.pool.get('res.users').browse(self.cr,self.uid,self.uid,context=context).name+ ' => ' + error_title+ error_message
+        return self.pool.get('jasper.document').write(self.cr, 1, [doc.id],{'error_text':new_error_txt}, context=context)
+                        
 
     def add_attachment(self, res_id, aname, content, mimetype='binary',
                        context=None):
@@ -254,8 +270,9 @@ class Report(object):
         # If language is set in the jasper document we get it, otherwise language is by default American English 
         language = context.get('lang', 'en_US')
         if current_document.lang:
-            language = self._eval_lang(cur_obj, current_document)
-            language = language[0][0] 
+            language = self._eval_lang(cur_obj, current_document)            
+            if isinstance(language, list):   # type is str if language is given directly as string 'de_DE' for instance
+                language = language[0][0] 
 
         # Check if we can launch this reports
         # Test can be simple, or un a function
@@ -391,8 +408,11 @@ class Report(object):
                 #Using language coming from the jasper document if exists 
                 my_context = context.copy()
                 my_context['lang'] = language
+                try:
+                    d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
+                except:
+                    raise
                 
-                d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
                 if current_document.debug:
                     return (d_xml, 1)
                 d_par['xml_data'] = d_xml
@@ -487,6 +507,37 @@ class Report(object):
                     context=context)
 
         return (content, duplicate)
+    
+    # Function to merge two XML
+    # http://stackoverflow.com/questions/14878706/merge-xml-files-with-nested-elements-without-external-libraries
+    def combine_element(self, one, other):
+        """
+        This function recursively updates either the text or the children
+        of an element if another element is found in `one`, or adds it
+        from `other` if not found.
+        """
+        # Create a mapping from tag name to element, as that's what we are fltering with
+        mapping = {(el.tag, hashabledict(el.attrib)): el for el in one}
+        for el in other:
+            if len(el) == 0:
+                # Not nested
+                try:
+                    # Update the text
+                    mapping[(el.tag, hashabledict(el.attrib))].text = el.text
+                except KeyError:
+                    # An element with this name is not in the mapping
+                    mapping[(el.tag, hashabledict(el.attrib))] = el
+                    # Add it
+                    one.append(el)
+            else:
+                try:
+                    # Recursively process the element, and update it in the same way
+                    self.combine_element(mapping[(el.tag, hashabledict(el.attrib))], el)
+                except KeyError:
+                    # Not in the mapping
+                    mapping[(el.tag, hashabledict(el.attrib))] = el
+                    # Just add it
+                    one.append(el)
 
     def execute(self):
         """Launch the report and return it"""
@@ -499,6 +550,7 @@ class Report(object):
         # #
         # For each IDS, launch a query, and return only one result
         #
+        
         pdf_list = []
         doc_ids = []
         if self.service:
@@ -531,6 +583,7 @@ class Report(object):
             js_ids = self.js_obj.search(self.cr, self.uid,
                                         [('enable', '=', True)])
             if not len(js_ids):
+                self.add_error_message(doc, _('Configuration Error:'),_('No JasperServer configuration found!'), context=context)
                 raise JasperException(_('Configuration Error'),
                                       _('No JasperServer configuration found!'))  # noqa
 
@@ -548,6 +601,7 @@ class Report(object):
                 uri = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, doc.report_unit)
             self.attrs['params'] = (doc.format, uri, doc.mode, doc.depth, {})
 
+        all_xml = []
         one_check = {}
         one_check[doc.id] = False
         content = ''
@@ -569,8 +623,25 @@ class Report(object):
                 else:
                     if doc.only_one and one_check.get(doc.id, False):
                         continue
-                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    try:
+                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    except Exception as e:
+
+                        type_, value_, traceback_ = sys.exc_info()
+                        ex = traceback.format_exception(type_, value_, traceback_)
+
+                        #self.add_error_message(doc,e[0],e[1], context=context)
+                        if isinstance(e, list):
+                            ex_all = e[0] + ' : ' + e[1] + '\n'
+                            for item in ex:
+                                ex_all = ex_all + item
+                            self.add_error_message(doc, e[0], ex_all, context=context)
+                            raise except_osv(e.name, e.value)
+                        else:
+                            self.add_error_message(doc, e.name, e.value, context=context)
+                            raise except_osv(e.name, e.value)
                     one_check[doc.id] = True
+                    all_xml.append(content)
         else:
             if doc.mode == 'multi' and self.outputFormat == 'PDF':
                 for d in doc.child_ids:
@@ -591,6 +662,24 @@ class Report(object):
         # ONLY PDF CAN BE MERGE!
         if self.outputFormat.upper() != 'PDF':
             self.obj = external_pdf(content, self.outputFormat)
+            
+            # #
+            # # We use function combine_elements to merge all XML in unique file
+            # #
+            if  self.outputFormat == 'XML':
+                # To merge XML, result_xml wil contain the XML merged till now. For first instance, it just contains general structure
+                result_xml = "<data></data>"
+                for item in all_xml:
+                    one = et.fromstring(result_xml)
+                    other = et.fromstring(item)
+                    # Merging two XML strings that were converted to XML Elements 
+                    self.combine_element(one, other)
+                    
+                    # Updating content of self.obj, that is in the end what we return
+                    self.obj.content =  et.tostring(one)                       
+                    # Update resulting XML string for next iteration
+                    result_xml = self.obj.content   
+               
             return (self.obj.content, self.outputFormat)
 
         def find_pdf_attachment(pdfname, current_obj):

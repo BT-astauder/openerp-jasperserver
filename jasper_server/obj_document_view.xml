@@ -288,6 +288,9 @@
                             <page string="Labels">
                                 <field name="label_ids" nolabel="1" />
                             </page>
+                            <page string="Errors">
+                            	<field name="error_text" nolabel="1" />
+                            </page>
                         </notebook>
                     </sheet>
                 </form>

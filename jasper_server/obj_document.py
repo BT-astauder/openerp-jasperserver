@@ -123,7 +123,7 @@ class jasper_document(orm.Model):
         # RML fields
         'rml_ir_actions_report_xml_id': fields.many2one('ir.actions.report.xml', string='Report to generate RML'),
         'rml_ir_actions_report_xml_name': fields.related('rml_ir_actions_report_xml_id', 'report_name', type="char", string='Report to generate RML'),
-
+        'error_text': fields.text('Errors') 
     }
 
     _sql_constraints = [('unique_number', 'unique(report_link_name)','The Report Link Name must be unique.')]
@@ -322,6 +322,21 @@ class jasper_document(orm.Model):
 
         default['report_id'] = False
         default['name'] = doc.name + _(' (copy)')
+
+        new_yaml_object_ids = []
+        for yaml_object in doc.yaml_object_ids:
+            new_yaml_object_ids.append((4, self.pool.get('jasper.yaml_object').copy(cr, uid, yaml_object.id, default=None, context=context)))
+        new_param_ids = []
+        for param in doc.param_ids:
+            new_param_ids.append((4, self.pool.get('jasper.document.parameter').copy(cr, uid, param.id, default=None, context=context)))
+        new_label_ids = []
+        for label in doc.label_ids:
+            new_label_ids.append((4, self.pool.get('jasper.document.label').copy(cr, uid, label.id, default=None, context=context)))
+
+        default['yaml_object_ids'] = new_yaml_object_ids
+        default['param_ids'] = new_param_ids
+        default['label_ids'] = new_label_ids
+
         return super(jasper_document, self).copy(cr, uid, id, default,
                                                  context=context)
 
