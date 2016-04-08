@@ -270,9 +270,9 @@ class Report(object):
         # If language is set in the jasper document we get it, otherwise language is by default American English 
         language = context.get('lang', 'en_US')
         if current_document.lang:
-            language = self._eval_lang(cur_obj, current_document)            
-            if isinstance(language, list):   # type is str if language is given directly as string 'de_DE' for instance
-                language = language[0][0] 
+            language_aux = self._eval_lang(cur_obj, current_document, context=context)
+            if isinstance(language_aux, list) and language_aux[0][0]:   # type is str if language is given directly as string 'de_DE' for instance
+                language = language_aux[0][0]
 
         # Check if we can launch this reports
         # Test can be simple, or un a function
@@ -643,6 +643,9 @@ class Report(object):
                         elif isinstance(e, KeyError):
                             self.add_error_message(doc, 'KeyError', e.message, context=context)
                             raise except_osv('KeyError', e.message)
+                        elif isinstance(e, IndentationError):
+                            self.add_error_message(doc, 'IndentationError', e.message, context=context)
+                            raise except_osv('IndentationError', e.message)
                         else:
                             if isinstance(e.value, unicode):
                                 self.add_error_message(doc, e.name, e.value, context=context)
