@@ -646,6 +646,11 @@ class Report(object):
                             if isinstance(e.value, unicode):
                                 self.add_error_message(doc, e.name, e.value, context=context)
                                 raise except_osv(e.name, e.value)
+                            elif isinstance(e.value, UnicodeEncodeError):
+                                error_message = '%s - probably due to   %s' % (unicode(e.value), e.value.object)
+                                error_message_interface = '%s\n\nIt probably comes from:\n- %s\n' % (unicode(e.value), e.value.object)
+                                self.add_error_message(doc, e.name, error_message, context=context)
+                                raise except_osv(e.name, error_message_interface)
                             else:
                                 self.add_error_message(doc, e.name, e.value.message, context=context)
                                 raise except_osv(e.name, e.value.message)
