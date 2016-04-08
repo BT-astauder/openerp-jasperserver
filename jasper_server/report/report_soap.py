@@ -627,17 +627,25 @@ class Report(object):
                         ex = traceback.format_exception(type_, value_, traceback_)
 
                         #self.add_error_message(doc,e[0],e[1], context=context)
-                        if isinstance(e,list):
-                            ex_all = e[0]+' : ' + e[1] +'\n'
+                        if isinstance(e, list):
+                            ex_all = e[0] + ' : ' + e[1] + '\n'
                             for item in ex:
-                                ex_all = ex_all+item
-                            self.add_error_message(doc,e[0],ex_all, context=context)
-                            raise except_osv(e[0],e[1])
+                                ex_all = ex_all + item
+                            self.add_error_message(doc, e[0], ex_all, context=context)
+                            raise except_osv(e.name, e.value)
+                        elif isinstance(e, unicode):
+                            self.add_error_message(doc, e, '', context=context)
+                            raise except_osv(e, '')
+                        elif isinstance(e, KeyError):
+                            self.add_error_message(doc, 'KeyError', e.message, context=context)
+                            raise except_osv('KeyError', e.message)
                         else:
-                            self.add_error_message(doc,e.title,e.message.message, context=context)
-                            raise except_osv(e.title,e.message.message)
-                    one_check[doc.id] = True
-                    all_xml.append(content)
+                            if isinstance(e.value, unicode):
+                                self.add_error_message(doc, e.name, e.value, context=context)
+                                raise except_osv(e.name, e.value)
+                            else:
+                                self.add_error_message(doc, e.name, e.value.message, context=context)
+                                raise except_osv(e.name, e.value.message)
         else:
             if doc.mode == 'multi' and self.outputFormat == 'PDF':
                 for d in doc.child_ids:

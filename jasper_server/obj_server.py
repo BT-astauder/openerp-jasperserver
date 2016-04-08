@@ -272,20 +272,14 @@ class JasperServer(orm.Model):
             xmlObject.set("name", yaml_object.name)
             xmlObject.set("model", yaml_object.model.name)
             for object in model_obj.browse(cr, user_id, model_ids, ctx):
-                xmlField = Element('container')    
-                
+                xmlField = Element('container')
+
                 # take the field name if it exists in model and if name is not False
                 # else take the rec_name value if a rec_name was used
-                # else take simply the object id            
-#                 xmlField.set("name", object.name if 'name' in object._fields and object.name else
-#                                 model_obj.read(cr, uid, 
-#                                                [object.id], 
-#                                                [object._rec_name])[0][object._rec_name] if object._rec_name else
-#                                 str(object.id))
- 
-                rec_name_value = model_obj.read(cr, uid, 
-                                               [object.id], 
-                                               [object._rec_name])[0][object._rec_name]
+                # else take simply the object id
+                rec_name_value = model_obj.read(cr, uid,
+                                                [object.id],
+                                                [object._rec_name])[0][object._rec_name]
 
                 if 'name' in object._fields and object.name:
                     xmlField.set("name", object.name)
@@ -325,7 +319,7 @@ class JasperServer(orm.Model):
                         xmlContainerField = Element("container")
                         xmlContainerField.set("name", fieldname)
                         self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
-                        
+
                         xmlField.append(xmlContainerField)
                 elif object._model._all_columns[fieldname].column._type == 'many2one':  # m2o
                     if not isinstance(object[fieldname], browse_null):
@@ -341,7 +335,6 @@ class JasperServer(orm.Model):
                 xmlField.text = ''
                 if object:
                     xmlField.text = self._format_element(xmlField, object._model._fields[field].type, object[field])
-
 
             root.append(xmlField)
         return
