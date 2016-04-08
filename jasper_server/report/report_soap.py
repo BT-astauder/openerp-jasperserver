@@ -637,9 +637,19 @@ class Report(object):
                                 ex_all = ex_all + item
                             self.add_error_message(doc, e[0], ex_all, context=context)
                             raise except_osv(e.name, e.value)
+                        elif isinstance(e, unicode):
+                            self.add_error_message(doc, e, '', context=context)
+                            raise except_osv(e, '')
+                        elif isinstance(e, KeyError):
+                            self.add_error_message(doc, 'KeyError', e.message, context=context)
+                            raise except_osv('KeyError', e.message)
                         else:
-                            self.add_error_message(doc, e.name, e.value, context=context)
-                            raise except_osv(e.name, e.value)
+                            if isinstance(e.value, unicode):
+                                self.add_error_message(doc, e.name, e.value, context=context)
+                                raise except_osv(e.name, e.value)
+                            else:
+                                self.add_error_message(doc, e.name, e.value.message, context=context)
+                                raise except_osv(e.name, e.value.message)
                     one_check[doc.id] = True
                     all_xml.append(content)
         else:
