@@ -260,9 +260,13 @@ class JasperServer(orm.Model):
                 
                 for key,value in yaml_context.items():
                     ctx[key] = value
-                
+            aux = yaml_object.domain
+            my_args = []
+            if aux:
+                aux = aux.replace('[[', '').replace(']]', '')
+                my_args = eval(aux, {'o': current_object, 'c': user_company, 't': time, 'u': user}) or ''
             model_ids = model_obj.search(cr, user_id,
-                                         args=eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
+                                         args=my_args,
                                          offset=yaml_object.offset,
                                          limit=yaml_object.limit if yaml_object.limit > 0 else None,
                                          order=yaml_object.order,
