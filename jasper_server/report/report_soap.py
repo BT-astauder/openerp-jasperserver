@@ -540,6 +540,8 @@ class Report(object):
     def execute(self):
         """Launch the report and return it"""
         context = self.context.copy()
+        # The following line is required in v9 to get discount lines in the Reports
+        context['custom_search_line_discount'] = True
 
         ids = self.ids
         log_debug('DATA:')
@@ -615,13 +617,13 @@ class Report(object):
                             self.path = compose_path('/openerp/bases/%s') % ( d.report_unit)
                         else:
                             self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
                         one_check[d.id] = True
                 else:
                     if doc.only_one and one_check.get(doc.id, False):
                         continue
                     try:
-                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
                     except Exception as e:
 
                         type_, value_, traceback_ = sys.exc_info()
@@ -690,11 +692,11 @@ class Report(object):
                         self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
                     else:
                         self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
                     one_check[d.id] = True
             else:
                 if not (doc.only_one and one_check.get(doc.id, False)):
-                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
                     one_check[doc.id] = True
 
         # If format is not PDF, we return it directly
