@@ -247,10 +247,10 @@ class JasperServer(orm.Model):
 
         import yaml
         root = Element('data')
-        
+
+        ctx = context.copy()
         for yaml_object in jasper_document.yaml_object_ids:
-            ctx = context.copy()
-        
+
             model_obj = self.pool.get(yaml_object.model.model)
             user_id = uid
             if yaml_object.user_id.id:
