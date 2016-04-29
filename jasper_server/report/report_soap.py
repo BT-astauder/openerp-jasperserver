@@ -38,6 +38,7 @@ from report_exception import JasperException, EvalError
 from pyPdf import PdfFileWriter, PdfFileReader
 from openerp.addons.jasper_server import jasperlib as jslib
 from openerp import netsvc
+from openerp.exceptions import AccessError
 
 from xml.etree import ElementTree as et
 import sys
@@ -481,7 +482,7 @@ class Report(object):
             except jslib.ServerNotFound:
                 raise JasperException(_('Error'), _('Server not found !'))
             except jslib.AuthError:
-                raise JasperException(_('Error'), _('Autentification failed !'))
+                raise JasperException(_('Error'), _('Authentication failed !'))
             except Exception as e:
                 raise JasperException(_('Error'), e)
 
@@ -539,6 +540,8 @@ class Report(object):
     def execute(self):
         """Launch the report and return it"""
         context = self.context.copy()
+        # The following line is required in v9 to get discount lines in the Reports
+        context['custom_search_line_discount'] = True
 
         ids = self.ids
         log_debug('DATA:')
@@ -614,13 +617,13 @@ class Report(object):
                             self.path = compose_path('/openerp/bases/%s') % ( d.report_unit)
                         else:
                             self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
                         one_check[d.id] = True
                 else:
                     if doc.only_one and one_check.get(doc.id, False):
                         continue
                     try:
-                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
                     except Exception as e:
 
                         type_, value_, traceback_ = sys.exc_info()
@@ -642,18 +645,44 @@ class Report(object):
                         elif isinstance(e, IndentationError):
                             self.add_error_message(doc, 'IndentationError', e.message, context=context)
                             raise except_osv('IndentationError', e.message)
+                        elif isinstance(e, AccessError):
+                            self.add_error_message(doc, 'AccessError', e.name, context=context)
+                            raise except_osv('AccessError', e.name)
+                        elif isinstance(e, EvalError):
+                            self.add_error_message(doc, 'EvalError: %s' % (e.name), e.message, context=context)
+                            raise except_osv('EvalError: %s' % (e.name), e.message)
+                        elif isinstance(e, ValueError):
+                            self.add_error_message(doc, 'ValueError', e.message, context=context)
+                            raise except_osv('ValueError', e.message)
+                        elif isinstance(e, TypeError):
+                            self.add_error_message(doc, 'TypeError', e.message, context=context)
+                            raise except_osv('TypeError', e.message)
                         else:
-                            if isinstance(e.value, unicode):
-                                self.add_error_message(doc, e.name, e.value, context=context)
-                                raise except_osv(e.name, e.value)
-                            elif isinstance(e.value, UnicodeEncodeError):
-                                error_message = '%s - probably due to   %s' % (unicode(e.value), e.value.object)
-                                error_message_interface = '%s\n\nIt probably comes from:\n- %s\n' % (unicode(e.value), e.value.object)
-                                self.add_error_message(doc, e.name, error_message, context=context)
-                                raise except_osv(e.name, error_message_interface)
-                            else:
-                                self.add_error_message(doc, e.name, e.value.message, context=context)
-                                raise except_osv(e.name, e.value.message)
+                            if hasattr(e, 'value'):
+                                if isinstance(e.value, unicode):
+                                    self.add_error_message(doc, e.name, e.value, context=context)
+                                    raise except_osv(e.name, e.value)
+                                elif isinstance(e.value, UnicodeEncodeError):
+                                    error_message = '%s - probably due to   %s' % (unicode(e.value), e.value.object)
+                                    error_message_interface = '%s\n\nIt probably comes from:\n- %s\n' % (unicode(e.value), e.value.object)
+                                    self.add_error_message(doc, e.name, error_message, context=context)
+                                    raise except_osv(e.name, error_message_interface)
+                            message = 'Unknown'
+                            if hasattr(e, 'value'):
+                                message = e.value
+                                if hasattr(e.value, 'message'):
+                                    message = e.value.message
+                            elif hasattr(e, 'message'):
+                                message = e.message
+                                if hasattr(e.message, 'message'):
+                                    message = e.message.message
+                            title = str(type(e))
+                            if hasattr(e, 'name'):
+                                title = e.name
+                            elif hasattr(e, 'title'):
+                                title = e.title
+                            self.add_error_message(doc, title, message, context=context)
+                            raise except_osv(title, message)
         else:
             if doc.mode == 'multi' and self.outputFormat == 'PDF':
                 for d in doc.child_ids:
@@ -663,11 +692,11 @@ class Report(object):
                         self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
                     else:
                         self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
                     one_check[d.id] = True
             else:
                 if not (doc.only_one and one_check.get(doc.id, False)):
-                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
                     one_check[doc.id] = True
 
         # If format is not PDF, we return it directly
