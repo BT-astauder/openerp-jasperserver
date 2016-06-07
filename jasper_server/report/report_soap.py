@@ -114,15 +114,17 @@ class Report(object):
         # If no context, retrieve one on the current user
         self.context = context or self.pool.get('res.users').context_get(
             cr, uid, uid)
-    
+
     def add_error_message(self, doc, error_title, error_message, context=None):
         new_error_txt = ''
         old_error_txt = doc.error_text
         if old_error_txt:
             new_error_txt = old_error_txt
-        new_error_txt = new_error_txt + '\n'+ time.strftime("%d/%m/%Y %H:%M:%S") + ' ' + self.pool.get('res.users').browse(self.cr,self.uid,self.uid,context=context).name+ ' => ' + error_title+ error_message
-        return self.pool.get('jasper.document').write(self.cr, 1, [doc.id],{'error_text':new_error_txt}, context=context)
-                        
+        new_error_txt = "{0}\n{1} {2} => {3} {4}".format(new_error_txt, time.strftime("%d/%m/%Y %H:%M:%S"),
+                                                         self.pool.get('res.users').browse(self.cr, self.uid, self.uid, context=context).name,
+                                                         error_title, error_message)
+        return self.pool.get('jasper.document').write(self.cr, 1, [doc.id], {'error_text': new_error_txt}, context=context)
+
 
     def add_attachment(self, res_id, aname, content, mimetype='binary',
                        context=None):
