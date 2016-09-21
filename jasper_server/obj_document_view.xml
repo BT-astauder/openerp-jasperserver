@@ -207,6 +207,7 @@
                         <notebook colspan="4">
                             <page string="General">
                                 <group colspan="4" col="4">
+                                    <!-- <field name="model_id" domain="[('osv_memory','=', False)]"/> -->
                                     <field name="model_id"/>
                                     <field name="server_id"/>
                                     <field name="report_unit" attrs="{'required': [('mode','!=', 'multi')], 'readonly': [('mode','=', 'multi')]}"/>
@@ -345,7 +346,7 @@
         </record>
 
         <menuitem id="menu_jasper_document" 
-            parent="base.menu_config"
+            parent="jasper_server.menu_jasper"
             name="Jasper Reports"
             sequence="20"
             action="act_open_document_view"

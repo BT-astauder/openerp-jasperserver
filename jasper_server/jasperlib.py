@@ -67,7 +67,7 @@ class UnknownFormat(JasperException):
     pass
 
 
-## Create some XML element to resourceDescriptor
+# Create some XML element to resourceDescriptor
 class Request(etree.ElementBase):
     TAG = 'request'
 
@@ -191,10 +191,22 @@ class Jasper(object):
             tree = etree.parse(fp)
             fp.close()
 
-            raise ServerError('[' +
-                              tree.xpath('//returnCode')[0].text.encode('utf-8')  # noqa
-                              + ']' +
-                              tree.xpath('//returnMessage')[0].text.encode('utf-8'))  # noqa
+            return_code = tree.xpath('//returnCode')
+            if return_code:
+                return_code = return_code[0].text.encode('utf-8')
+            else:
+                return_code = ''
+
+            return_message = tree.xpath('//returnMessage')
+            if return_message:
+                return_message = return_message[0].text.encode('utf-8')
+            else:
+                return_message = ''
+
+            raise_msg = '[%(code)s]%(message)s' % ({'code': return_code,  # noqa
+                                                    'message': return_message})   # noga
+
+            raise ServerError(raise_msg)
 
     def create_request(self, operation='list', wsType='', uri='/', name='',
                        arguments=None, params=None):

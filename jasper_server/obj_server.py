@@ -172,7 +172,7 @@ class JasperServer(orm.Model):
             'ir.actions.url', 'ir.ui.view', 'ir.sequence',
         )
 
-        # #
+        ##
         # If generate_xml was called by a relation field, we must keep
         # the original filename
         ir_model = irm.read(cr, uid, irm_ids[0])
@@ -247,10 +247,10 @@ class JasperServer(orm.Model):
 
         import yaml
         root = Element('data')
-        
+
+        ctx = context.copy()
         for yaml_object in jasper_document.yaml_object_ids:
-            ctx = context.copy()
-        
+
             model_obj = self.pool.get(yaml_object.model.model)
             user_id = uid
             if yaml_object.user_id.id:
@@ -260,9 +260,13 @@ class JasperServer(orm.Model):
                 
                 for key,value in yaml_context.items():
                     ctx[key] = value
-                
+            aux = yaml_object.domain
+            my_args = []
+            if aux:
+                aux = aux.replace('[[', '').replace(']]', '')
+                my_args = eval(aux, {'o': current_object, 'c': user_company, 't': time, 'u': user}) or ''
             model_ids = model_obj.search(cr, user_id,
-                                         args=eval(yaml_object.domain.replace('[[', '').replace(']]', ''), {'o': current_object, 'c': user_company, 't': time, 'u': user}) or '',
+                                         args=my_args,
                                          offset=yaml_object.offset,
                                          limit=yaml_object.limit if yaml_object.limit > 0 else None,
                                          order=yaml_object.order,
@@ -272,14 +276,14 @@ class JasperServer(orm.Model):
             xmlObject.set("name", yaml_object.name)
             xmlObject.set("model", yaml_object.model.name)
             for object in model_obj.browse(cr, user_id, model_ids, ctx):
-                xmlField = Element('container')    
+                xmlField = Element('container')
 
                 # take the field name if it exists in model and if name is not False
                 # else take the rec_name value if a rec_name was used
-                # else take simply the object id    
-                rec_name_value = model_obj.read(cr, uid, 
-                                               [object.id], 
-                                               [object._rec_name])[0][object._rec_name]
+                # else take simply the object id
+                rec_name_value = model_obj.read(cr, uid,
+                                                [object.id],
+                                                [object._rec_name])[0][object._rec_name]
 
                 if 'name' in object._fields and object.name:
                     xmlField.set("name", object.name)
@@ -319,7 +323,7 @@ class JasperServer(orm.Model):
                         xmlContainerField = Element("container")
                         xmlContainerField.set("name", fieldname)
                         self.generate_from_yaml(cr, uid, xmlContainerField, objectListElement, value, prefix + fieldname, context=context)
-                        
+
                         xmlField.append(xmlContainerField)
                 elif object._model._all_columns[fieldname].column._type == 'many2one':  # m2o
                     if not isinstance(object[fieldname], browse_null):

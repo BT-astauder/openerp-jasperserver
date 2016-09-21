@@ -35,7 +35,7 @@ try:
 except ImportError:
     from StringIO import StringIO  # noqa
 
-# #
+##
 # Construct the body template for SOAP
 #
 BODY_TEMPLATE = """<SOAP-ENV:Envelope

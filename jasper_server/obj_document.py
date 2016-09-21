@@ -104,7 +104,7 @@ class jasper_document(orm.Model):
         'sequence': fields.integer('Sequence', help='The sequence is used when launch a multple report, to select the order to launch'),
         'only_one': fields.boolean('Launch one time for all ids', help='Launch the report only one time on multiple id'),
         'duplicate': fields.char('Duplicate', size=256, help="Indicate the number of duplicate copie, use o as object to evaluate\neg: o.partner_id.copy\nor\n'1'", ),
-        'lang': fields.char('Lang', size=256, help="Indicate the lang to use for this report, use o as object to evaluate\neg: o.partner_id.lang\nor\n'fr_FR'\ndefault use user's lang"),
+        'lang': fields.char('Lang', size=256, help="Indicate the lang to use for this report, use o as object to evaluate\neg: o.partner_id.lang\nctx as context\neg: ctx.get(\'test'\)\nor\n'en_US'\ndefault use user's lang"),
         'report_id': fields.many2one('ir.actions.report.xml', 'Report link', readonly=True, help='Link to the report in ir.actions.report.xml'),
         'check_sel': fields.selection([('none', 'None'), ('simple', 'Simple'), ('func', 'Function')], 'Checking type',
                                       help='if None, no check\nif Simple, define on Check Simple the condition\n if function, the object have check_print function'),
