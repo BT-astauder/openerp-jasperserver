@@ -38,6 +38,7 @@ from report_exception import JasperException, EvalError
 from pyPdf import PdfFileWriter, PdfFileReader
 from openerp.addons.jasper_server import jasperlib as jslib
 from openerp import netsvc
+from openerp.exceptions import AccessError
 
 from xml.etree import ElementTree as et
 import sys
