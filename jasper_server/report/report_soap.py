@@ -541,8 +541,6 @@ class Report(object):
     def execute(self):
         """Launch the report and return it"""
         context = self.context.copy()
-        # The following line is required in v9 to get discount lines in the Reports
-        context['custom_search_line_discount'] = True
 
         ids = self.ids
         log_debug('DATA:')

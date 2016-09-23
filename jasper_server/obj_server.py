@@ -160,7 +160,7 @@ class JasperServer(orm.Model):
         if not irm_ids:
             log_error('Model %s not found !' % relation)
 
-        ##
+        # #
         # We must ban many model
         #
         ban = (
@@ -281,14 +281,17 @@ class JasperServer(orm.Model):
                 # take the field name if it exists in model and if name is not False
                 # else take the rec_name value if a rec_name was used
                 # else take simply the object id
-                rec_name_value = model_obj.read(cr, uid,
-                                                [object.id],
-                                                [object._rec_name])[0][object._rec_name]
 
                 if 'name' in object._fields and object.name:
                     xmlField.set("name", object.name)
-                elif object._rec_name and rec_name_value:
-                    xmlField.set("name", rec_name_value)
+                elif object._rec_name != None:
+                    rec_name_value = model_obj.read(cr, uid,
+                                                    [object.id],
+                                                    [object._rec_name])[0][object._rec_name]
+                    if rec_name_value:
+                        xmlField.set("name", rec_name_value)
+                    else:
+                        xmlField.set("name", str(object.id))
                 else:
                     xmlField.set("name", str(object.id))
                 try:
@@ -340,6 +343,7 @@ class JasperServer(orm.Model):
                 if object:
                     xmlField.text = self._format_element(xmlField, object._model._fields[field].type, object[field])
 
+
             root.append(xmlField)
         return
 
@@ -349,7 +353,7 @@ class JasperServer(orm.Model):
             return field_value and unicode(field_value) or ''
         elif field_type == 'integer':
             return field_value and str(field_value) or '0'
-        elif field_type in ('float', 'monetary'):
+        elif field_type == 'float':
             return field_value and str(field_value) or '0.0'
         elif field_type == 'date':
             element.set('format', 'yyyy-MM-dd HH:mm:ss')
