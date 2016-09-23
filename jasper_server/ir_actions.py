@@ -22,9 +22,8 @@
 #
 ##############################################################################
 
-from openerp.osv import osv, fields
+from openerp.osv import osv
 from common import registered_report
-import logging
 import importlib
 from openerp.report import report_sxw
 import openerp.netsvc as netsvc
@@ -44,7 +43,7 @@ class IrActionReport(models.Model):
     report_type = fields.Selection(selection_add=[('jasper', 'Jasper')])
 
     def register_all(self, cursor, called_from_jasper_server_webkit=False):
-        
+
         return_value = super(IrActionReport, self).register_all(cursor)
 
         # in case jasper_server_webkit is installed, it will do all,
@@ -86,18 +85,7 @@ class IrActionReport(models.Model):
         _logger.info('====[END REGISTER RML REPORT FOR JASPER REPORT]====================')
 
         return return_value
-# 
-#     @classmethod
-#     def _add_field(self, name, field):
-#         res = super(IrActionReport, self)._add_field(name, field)
-# 
-#         if name == 'report_type':
-#             if 'jasper' not in zip(*field.selection)[0]:
-#                 field.selection.append(('jasper', 'Jasper'))
-# 
-#         return res
-
-
+#
     def _lookup_report(self, cr, name):
         """
         Look up a report definition.
