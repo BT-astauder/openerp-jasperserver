@@ -625,6 +625,7 @@ class Report(object):
                         continue
                     try:
                         (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
+                        all_xml.append(content)
                     except Exception as e:
 
                         type_, value_, traceback_ = sys.exc_info()
