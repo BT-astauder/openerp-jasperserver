@@ -160,7 +160,7 @@ class JasperServer(orm.Model):
         if not irm_ids:
             log_error('Model %s not found !' % relation)
 
-        # #
+        ##
         # We must ban many model
         #
         ban = (
@@ -343,7 +343,6 @@ class JasperServer(orm.Model):
                 if object:
                     xmlField.text = self._format_element(xmlField, object._model._fields[field].type, object[field])
 
-
             root.append(xmlField)
         return
 
@@ -353,7 +352,7 @@ class JasperServer(orm.Model):
             return field_value and unicode(field_value) or ''
         elif field_type == 'integer':
             return field_value and str(field_value) or '0'
-        elif field_type == 'float':
+        elif field_type in ('float', 'monetary'):
             return field_value and str(field_value) or '0.0'
         elif field_type == 'date':
             element.set('format', 'yyyy-MM-dd HH:mm:ss')
