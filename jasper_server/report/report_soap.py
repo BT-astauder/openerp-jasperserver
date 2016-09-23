@@ -38,6 +38,7 @@ from report_exception import JasperException, EvalError
 from pyPdf import PdfFileWriter, PdfFileReader
 from openerp.addons.jasper_server import jasperlib as jslib
 from openerp import netsvc
+from openerp.exceptions import AccessError
 
 from xml.etree import ElementTree as et
 import sys
@@ -114,15 +115,16 @@ class Report(object):
         # If no context, retrieve one on the current user
         self.context = context or self.pool.get('res.users').context_get(
             cr, uid, uid)
-    
+
     def add_error_message(self, doc, error_title, error_message, context=None):
         new_error_txt = ''
         old_error_txt = doc.error_text
         if old_error_txt:
             new_error_txt = old_error_txt
-        new_error_txt = new_error_txt + '\n'+ time.strftime("%d/%m/%Y %H:%M:%S") + ' ' + self.pool.get('res.users').browse(self.cr,self.uid,self.uid,context=context).name+ ' => ' + error_title+ error_message
-        return self.pool.get('jasper.document').write(self.cr, 1, [doc.id],{'error_text':new_error_txt}, context=context)
-                        
+        new_error_txt = "{0}\n{1} {2} => {3} {4}".format(new_error_txt, time.strftime("%d/%m/%Y %H:%M:%S"),
+                                                         self.pool.get('res.users').browse(self.cr, self.uid, self.uid, context=context).name,
+                                                         error_title, error_message)
+        return self.pool.get('jasper.document').write(self.cr, 1, [doc.id], {'error_text': new_error_txt}, context=context)
 
     def add_attachment(self, res_id, aname, content, mimetype='binary',
                        context=None):
@@ -270,9 +272,9 @@ class Report(object):
         # If language is set in the jasper document we get it, otherwise language is by default American English 
         language = context.get('lang', 'en_US')
         if current_document.lang:
-            language = self._eval_lang(cur_obj, current_document, context=context)            
-            if isinstance(language, list):   # type is str if language is given directly as string 'de_DE' for instance
-                language = language[0][0] 
+            language_aux = self._eval_lang(cur_obj, current_document, context=context)
+            if isinstance(language_aux, list) and language_aux[0][0]:   # type is str if language is given directly as string 'de_DE' for instance
+                language = language_aux[0][0]
 
         # Check if we can launch this reports
         # Test can be simple, or un a function
@@ -481,7 +483,7 @@ class Report(object):
             except jslib.ServerNotFound:
                 raise JasperException(_('Error'), _('Server not found !'))
             except jslib.AuthError:
-                raise JasperException(_('Error'), _('Autentification failed !'))
+                raise JasperException(_('Error'), _('Authentication failed !'))
             except Exception as e:
                 raise JasperException(_('Error'), e)
 
@@ -614,13 +616,13 @@ class Report(object):
                             self.path = compose_path('/openerp/bases/%s') % ( d.report_unit)
                         else:
                             self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
                         one_check[d.id] = True
                 else:
                     if doc.only_one and one_check.get(doc.id, False):
                         continue
                     try:
-                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
                         all_xml.append(content)
                     except Exception as e:
 
@@ -628,17 +630,59 @@ class Report(object):
                         ex = traceback.format_exception(type_, value_, traceback_)
 
                         #self.add_error_message(doc,e[0],e[1], context=context)
-                        if isinstance(e,list):
-                            ex_all = e[0]+' : ' + e[1] +'\n'
+                        if isinstance(e, list):
+                            ex_all = e[0] + ' : ' + e[1] + '\n'
                             for item in ex:
-                                ex_all = ex_all+item
-                            self.add_error_message(doc,e[0],ex_all, context=context)
-                            raise except_osv(e[0],e[1])
+                                ex_all = ex_all + item
+                            self.add_error_message(doc, e[0], ex_all, context=context)
+                            raise except_osv(e.name, e.value)
+                        elif isinstance(e, unicode):
+                            self.add_error_message(doc, e, '', context=context)
+                            raise except_osv(e, '')
+                        elif isinstance(e, KeyError):
+                            self.add_error_message(doc, 'KeyError', e.message, context=context)
+                            raise except_osv('KeyError', e.message)
+                        elif isinstance(e, IndentationError):
+                            self.add_error_message(doc, 'IndentationError', e.message, context=context)
+                            raise except_osv('IndentationError', e.message)
+                        elif isinstance(e, AccessError):
+                            self.add_error_message(doc, 'AccessError', e.name, context=context)
+                            raise except_osv('AccessError', e.name)
+                        elif isinstance(e, EvalError):
+                            self.add_error_message(doc, 'EvalError: %s' % (e.name), e.message, context=context)
+                            raise except_osv('EvalError: %s' % (e.name), e.message)
+                        elif isinstance(e, ValueError):
+                            self.add_error_message(doc, 'ValueError', e.message, context=context)
+                            raise except_osv('ValueError', e.message)
+                        elif isinstance(e, TypeError):
+                            self.add_error_message(doc, 'TypeError', e.message, context=context)
+                            raise except_osv('TypeError', e.message)
                         else:
-                            self.add_error_message(doc,e.title,e.message.message, context=context)
-                            raise except_osv(e.title,e.message.message)
-                    one_check[doc.id] = True
-                    all_xml.append(content)
+                            if hasattr(e, 'value'):
+                                if isinstance(e.value, unicode):
+                                    self.add_error_message(doc, e.name, e.value, context=context)
+                                    raise except_osv(e.name, e.value)
+                                elif isinstance(e.value, UnicodeEncodeError):
+                                    error_message = '%s - probably due to   %s' % (unicode(e.value), e.value.object)
+                                    error_message_interface = '%s\n\nIt probably comes from:\n- %s\n' % (unicode(e.value), e.value.object)
+                                    self.add_error_message(doc, e.name, error_message, context=context)
+                                    raise except_osv(e.name, error_message_interface)
+                            message = 'Unknown'
+                            if hasattr(e, 'value'):
+                                message = e.value
+                                if hasattr(e.value, 'message'):
+                                    message = e.value.message
+                            elif hasattr(e, 'message'):
+                                message = e.message
+                                if hasattr(e.message, 'message'):
+                                    message = e.message.message
+                            title = str(type(e))
+                            if hasattr(e, 'name'):
+                                title = e.name
+                            elif hasattr(e, 'title'):
+                                title = e.title
+                            self.add_error_message(doc, title, message, context=context)
+                            raise except_osv(title, message)
         else:
             if doc.mode == 'multi' and self.outputFormat == 'PDF':
                 for d in doc.child_ids:
@@ -648,11 +692,11 @@ class Report(object):
                         self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
                     else:
                         self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
                     one_check[d.id] = True
             else:
                 if not (doc.only_one and one_check.get(doc.id, False)):
-                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=self.context)
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
                     one_check[doc.id] = True
 
         # If format is not PDF, we return it directly

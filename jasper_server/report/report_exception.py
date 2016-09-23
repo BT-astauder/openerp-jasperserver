@@ -30,6 +30,8 @@ class JasperException(Exception):
     def __init__(self, title='Error', message='Empty message'):
         self.title = title
         self.message = message
+        self.name = title
+        self.value = message
 
     def __str__(self):
         return '%s: %s' % (self.title, self.message)

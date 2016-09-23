@@ -25,9 +25,7 @@
 from openerp.report.interface import report_int
 from openerp.osv.osv import except_osv
 
-import openerp.pooler as pooler
 import openerp.netsvc as netsvc
-import sys
 import openerp.exceptions
 import openerp.tools as tools
 
@@ -54,7 +52,7 @@ class report_jasper(report_int):
         try:
             return Report(self.name, cr, uid, ids, data, context).execute()
         except JasperException, e:
-            raise except_osv(e.title, e.message)
+            raise except_osv(e.name, e.value)
 
 report_jasper('report.print.jasper.server')
 

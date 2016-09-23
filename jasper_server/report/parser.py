@@ -112,7 +112,7 @@ def ParseXML(source):
     rcode = tree.xpath('//returnCode')
     rmess = tree.xpath('//returnMessage')
     return (rcode and rcode[0].text or '0',
-            rmess and rmess[0].text or 'unknow message')
+            rmess and rmess[0].text or 'unknown message')
 
 
 def ParseHTML(source):

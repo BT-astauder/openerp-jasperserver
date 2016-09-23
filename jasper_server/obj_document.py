@@ -322,6 +322,21 @@ class jasper_document(orm.Model):
 
         default['report_id'] = False
         default['name'] = doc.name + _(' (copy)')
+
+        new_yaml_object_ids = []
+        for yaml_object in doc.yaml_object_ids:
+            new_yaml_object_ids.append((4, self.pool.get('jasper.yaml_object').copy(cr, uid, yaml_object.id, default=None, context=context)))
+        new_param_ids = []
+        for param in doc.param_ids:
+            new_param_ids.append((4, self.pool.get('jasper.document.parameter').copy(cr, uid, param.id, default=None, context=context)))
+        new_label_ids = []
+        for label in doc.label_ids:
+            new_label_ids.append((4, self.pool.get('jasper.document.label').copy(cr, uid, label.id, default=None, context=context)))
+
+        default['yaml_object_ids'] = new_yaml_object_ids
+        default['param_ids'] = new_param_ids
+        default['label_ids'] = new_label_ids
+
         return super(jasper_document, self).copy(cr, uid, id, default,
                                                  context=context)
 
@@ -476,6 +491,7 @@ class jasper_document_label(orm.Model):
         'name': fields.char('Parameter', size=64, help='Name of the parameter send to JasperServer, prefix with I18N_\neg: test become I18N_TEST as parameter', required=True),
         'value': fields.char('Value', size=256, help='Name of the label, this field must be translate in all languages available in the database', required=True, translate=True),
         'document_id': fields.many2one('jasper.document', 'Document', required=True, ondelete='cascade'),
+        'enabled': fields.boolean('Enabled'),
     }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
