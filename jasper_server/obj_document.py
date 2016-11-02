@@ -183,7 +183,10 @@ class jasper_document(orm.Model):
                            WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
             self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
-        report_id.with_context(lang='de_DE').name = doc.with_context(lang='de_DE').name
+        # Loading translations
+        langs = self.pool.get('res.lang').search_read(cr, uid, [('code', '!=', 'en_US')], ['code'], context=context)
+        for lang in langs:
+            report_id.with_context(lang=lang['code']).name = doc.with_context(lang=lang['code']).name
 # TO-DO : Hack by mara 1
 #        registered_report(report_name)
 # =======================
