@@ -123,7 +123,7 @@ class jasper_document(orm.Model):
         # RML fields
         'rml_ir_actions_report_xml_id': fields.many2one('ir.actions.report.xml', string='Report to generate RML'),
         'rml_ir_actions_report_xml_name': fields.related('rml_ir_actions_report_xml_id', 'report_name', type="char", string='Report to generate RML'),
-        'error_text': fields.text('Errors') 
+        'error_text': fields.text('Errors')
     }
 
     _sql_constraints = [('unique_number', 'unique(report_link_name)','The Report Link Name must be unique.')]
@@ -166,6 +166,7 @@ class jasper_document(orm.Model):
             }
             act_report_obj.write(cr, uid, [doc.report_id.id], args,
                                  context=context)
+            report_id = doc.report_id
         else:
             _logger.info('Create "%s" service' % doc.name)
             args = {
@@ -182,6 +183,10 @@ class jasper_document(orm.Model):
                            WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
             self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
+        # Loading translations
+        langs = self.pool.get('res.lang').search_read(cr, uid, [('code', '!=', 'en_US')], ['code'], context=context)
+        for lang in langs:
+            report_id.with_context(lang=lang['code']).name = doc.with_context(lang=lang['code']).name
 # TO-DO : Hack by mara 1
 #        registered_report(report_name)
 # =======================
