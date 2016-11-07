@@ -618,13 +618,13 @@ class Report(object):
                             self.path = compose_path('/openerp/bases/%s') % ( d.report_unit)
                         else:
                             self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
+                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, [ex], context=context)
                         one_check[d.id] = True
                 else:
                     if doc.only_one and one_check.get(doc.id, False):
                         continue
                     try:
-                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
+                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], context=context)
                         all_xml.append(content)
                     except Exception as e:
 
@@ -694,11 +694,11 @@ class Report(object):
                         self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
                     else:
                         self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, ids, context=context)
+                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, [ex], context=context)
                     one_check[d.id] = True
             else:
                 if not (doc.only_one and one_check.get(doc.id, False)):
-                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, ids, context=context)
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], context=context)
                     one_check[doc.id] = True
 
         # If format is not PDF, we return it directly
@@ -721,7 +721,16 @@ class Report(object):
                     # Updating content of self.obj, that is in the end what we return
                     self.obj.content =  et.tostring(one)                       
                     # Update resulting XML string for next iteration
-                    result_xml = self.obj.content   
+                    result_xml = self.obj.content
+            elif self.outputFormat.upper() == 'CSV':
+                # For first item we leave the header but for the next items we remove the header
+                content = ''
+                for x in all_xml:
+                    if content=='':
+                        content = content + x
+                    else:
+                        content = content + x.split('\n')[1] + '\n'
+                self.obj.content = content
                
             return (self.obj.content, self.outputFormat)
 
