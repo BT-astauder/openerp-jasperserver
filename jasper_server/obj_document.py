@@ -166,8 +166,13 @@ class jasper_document(orm.Model):
             }
             act_report_obj.write(cr, uid, [doc.report_id.id], args,
                                  context=context)
+            # Loading translations
+            langs = self.pool.get('res.lang').search_read(cr, uid, [('code', '!=', 'en_US')], ['code'], context=context)
+            for lang in langs:
+                doc.report_id.with_context(lang=lang['code']).name = doc.with_context(lang=lang['code']).name
         else:
             _logger.info('Create "%s" service' % doc.name)
+            _logger.warning('    Update this module again in order to load the translation of "%s"' % doc.name)
             args = {
                 'name': doc.name,
                 'report_name': report_name,
@@ -182,6 +187,8 @@ class jasper_document(orm.Model):
                            WHERE id=%s""", (report_id, id))
             value = 'ir.actions.report.xml,' + str(report_id)
             self.pool.get('ir.model.data').ir_set(cr, uid, 'action', 'client_print_multi', doc.name, [doc.model_id.model], value, replace=False, isobject=True)
+
+
 # TO-DO : Hack by mara 1
 #        registered_report(report_name)
 # =======================
