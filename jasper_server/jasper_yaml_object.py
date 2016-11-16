@@ -29,7 +29,7 @@ class jasper_yaml_object(osv.osv):
         'jasper_document_id': fields.many2one('jasper.document', string="Jasper Document"),
         'name': fields.char('Name', size=50, required=True),
         'model': fields.many2one('ir.model', string='Model', required=True),
-        'domain': fields.char('Domain', size=128),
+        'domain': fields.text('Domain'),
         'offset': fields.integer('Offset'),
         'limit': fields.integer('Limit'),
         'order': fields.char('Order', size=128),
