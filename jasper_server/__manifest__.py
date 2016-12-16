@@ -46,7 +46,7 @@ This module required library to work properly
 
 # pip install httplib2 (>= 0.6.0)
 # pip install pyPdf (>= 1.13)
-# pip install python-dime 
+# pip install python-dime
 
 
 In collaboration with Eric Vernichon (from Everlibre)
@@ -72,7 +72,7 @@ In collaboration with Eric Vernichon (from Everlibre)
     'demo': [
         #'demo/jasper_document.xml',
     ],
-    'installable': True,
+    'installable': False,
     'auto_install': False,
     'external_dependencies': {'python': ['httplib2', 'pyPdf', 'dime']},
     'application': True,
