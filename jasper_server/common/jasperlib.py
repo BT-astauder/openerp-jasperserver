@@ -32,9 +32,18 @@ import email
 import os
 
 KNOWN_FORMAT = [
-    'PDF', 'XLS', 'XLSX', 'HTML', 'RTF',
-    'CSV', 'XML', 'DOCX', 'ODT', 'ODS',
-    'JPRINT'
+    # TODO: Some formats are commented because currently they are not working (v10.0.1.0)
+    'PDF',
+    'XLS',
+    # 'XLSX',
+    # 'HTML',
+    'RTF',
+    'CSV',
+    'XML',
+    # 'DOCX',
+    # 'ODT',
+    # 'ODS',
+    # 'JPRINT',
 ]
 
 
@@ -140,7 +149,7 @@ class Jasper(object):
         }
         self.body = ''
 
-    def auth(self,locale='en_US'):
+    def auth(self, locale='en_US'):
         """
         Add credential
         """
@@ -148,7 +157,7 @@ class Jasper(object):
 
         # We must simulate a request if we want to check the auth is correct
 
-        # Generate a soap query to verify the authentification
+        # Generate a soap query to verify the authentication
         rq = Request(operationName='list', locale=locale)
         rq.append(RequestRD('folder', '', '/'))
         self.body = SoapEnv('list', etree.tostring(rq)).output()
@@ -159,7 +168,7 @@ class Jasper(object):
             raise ServerNotFound('Server not found')
 
         if res.get('status', '200') == '401':
-            raise AuthError('Authentification Failed !')
+            raise AuthError('Authentication Failed !')
         elif res.get('status', '200') != '200':
             return False
 
@@ -208,14 +217,15 @@ class Jasper(object):
 
             raise ServerError(raise_msg)
 
-    def create_request(self, operation='list', wsType='', uri='/', name='',
+    @staticmethod
+    def create_request(operation='list', wsType='', uri='/', name='',
                        arguments=None, params=None):
         if arguments is None:
             arguments = {}
 
         if params is None:
             params = {}
-        
+
         language = 'en_US'
         if 'OERP_LANGUAGE' in params:
             language = params['OERP_LANGUAGE']
@@ -232,7 +242,7 @@ class Jasper(object):
         # Add query parameters
         for k, v in params.items():
             p = etree.SubElement(rd, 'parameter', name=k)
-            p.text = str(v).encode('ascii', 'xmlcharrefreplace')
+            p.text = v.encode('ascii', 'xmlcharrefreplace')
 
         rq.append(rd)
         return etree.tostring(rq, pretty_print=True)
@@ -285,7 +295,7 @@ if __name__ == '__main__':
     except ServerNotFound:
         raise ServerNotFound('Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        raise AuthError('Error, Authentification failed for %s/%s' % (js.user, js.pwd))
+        raise AuthError('Error, Authentication failed for %s/%s' % (js.user, js.pwd))
 
     params = {
         'OERP_COMPANY_ID': 1,
@@ -302,7 +312,7 @@ if __name__ == '__main__':
     except ServerNotFound:
         raise ServerNotFound('Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        raise AuthError('Error, Authentification failed for %s/%s' % (js.user, js.pwd))
+        raise AuthError('Error, Authentication failed for %s/%s' % (js.user, js.pwd))
 
     try:
         envelop = js.run_report(uri='/reports/samples/AllAccounts',
@@ -314,7 +324,7 @@ if __name__ == '__main__':
     except ServerNotFound:
         raise ServerNotFound('Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        raise AuthError('Error, Authentification failed for %s/%s' % (js.user, js.pwd))
+        raise AuthError('Error, Authentication failed for %s/%s' % (js.user, js.pwd))
     except ServerError, e:
         raise ServerError( str(e))
 
@@ -328,7 +338,7 @@ if __name__ == '__main__':
     except ServerNotFound:
         raise ServerNotFound( 'Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        raise AuthError( 'Error, Authentification failed for %s/%s' % (js.user, js.pwd))
+        raise AuthError( 'Error, Authentication failed for %s/%s' % (js.user, js.pwd))
     except ServerError, e:
         raise ServerError( str(e))
 
@@ -343,8 +353,6 @@ if __name__ == '__main__':
     except ServerNotFound:
         raise ServerNotFound( 'Error, server not found %s %d' % (js.host, js.port))
     except AuthError:
-        raise AuthError( 'Error, Authentification failed for %s/%s' % (js.user, js.pwd))
+        raise AuthError( 'Error, Authentication failed for %s/%s' % (js.user, js.pwd))
     except UnknownFormat as e:
         pass
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

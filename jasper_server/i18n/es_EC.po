@@ -655,8 +655,8 @@ msgid ""
 msgstr ""
 
 #. module: jasper_server
-#: help:jasper.server,pass:0
-msgid "Enter the password for the user, by defaul is jasperadmin"
+#: help:jasper.server,password:0
+msgid "Enter the password for the user, by default is jasperadmin"
 msgstr ""
 
 #. module: jasper_server
@@ -958,7 +958,7 @@ msgid "\"check_print\" function not found in \"%s\" object"
 msgstr ""
 
 #. module: jasper_server
-#: field:jasper.server,pass:0
+#: field:jasper.server,password:0
 msgid "Password"
 msgstr ""
 

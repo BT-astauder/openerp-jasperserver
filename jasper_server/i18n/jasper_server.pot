@@ -264,7 +264,7 @@ msgstr ""
 #. module: jasper_server
 #: code:addons/jasper_server/obj_server.py:178
 #, python-format
-msgid "Error, JasperServer authentification failed for user %s/%s"
+msgid "Error, JasperServer authentication failed for user %s/%s"
 msgstr ""
 
 #. module: jasper_server
@@ -589,7 +589,7 @@ msgstr ""
 
 #. module: jasper_server
 #: help:jasper.server,status:0
-msgid "Check the registered and authentification status"
+msgid "Check the registered and authentication status"
 msgstr ""
 
 #. module: jasper_server
@@ -599,7 +599,7 @@ msgstr ""
 
 #. module: jasper_server
 #: help:load.jrxml.file,datafile:0
-msgid "Select file to transfert"
+msgid "Select file to transfer"
 msgstr ""
 
 #. module: jasper_server
@@ -679,8 +679,8 @@ msgid "Unknown error when evaluate duplicate\n"
 msgstr ""
 
 #. module: jasper_server
-#: help:jasper.server,pass:0
-msgid "Enter the password for the user, by defaul is jasperadmin"
+#: help:jasper.server,password:0
+msgid "Enter the password for the user, by default is jasperadmin"
 msgstr ""
 
 #. module: jasper_server
@@ -984,7 +984,7 @@ msgid "\"check_print\" function not found in \"%s\" object"
 msgstr ""
 
 #. module: jasper_server
-#: field:jasper.server,pass:0
+#: field:jasper.server,password:0
 msgid "Password"
 msgstr ""
 

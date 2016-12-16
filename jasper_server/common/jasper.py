@@ -22,16 +22,11 @@
 #
 ##############################################################################
 
-from openerp.report.interface import report_int
-from openerp.osv.osv import except_osv
+from odoo.api import Environment
+from odoo.report.interface import report_int
 
-import openerp.netsvc as netsvc
-import openerp.exceptions
-import openerp.tools as tools
-
-
-from report.report_soap import Report
-from report.report_exception import JasperException
+from ..report.report_soap import Report
+from ..report.report_exception import JasperException
 
 import logging
 
@@ -43,17 +38,15 @@ class report_jasper(report_int):
     Extend report_int to use Jasper Server
     """
 
-    def create(self, cr, uid, ids, data, context=None):
-        if context is None:
-            context = {}
+    def create(self, cr, uid, res_ids, data, context=None):
 
+        env = Environment(cr, uid, context or {})
         if _logger.isEnabledFor(logging.DEBUG):
             _logger.debug('Call %s' % self.name)
         try:
-            return Report(self.name, cr, uid, ids, data, context).execute()
-        except JasperException, e:
-            raise except_osv(e.name, e.value)
+            report = Report(self.name, env, res_ids, data)
+            return report.execute()
+        except JasperException as e:
+            raise JasperException(e.name, e.value)
 
 report_jasper('report.print.jasper.server')
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<openerp>
+<odoo>
     <data>
 
         <record id="view_load_jrxml_file_form" model="ir.ui.view">
             <field name="name">load_jrxml_file_form</field>
             <field name="model">load.jrxml.file</field>
-            <field name="priority" eval="8"/>
             <field name="arch" type="xml">
-            <form string="Load JRXML file" col="4" version="7.0">
+            <form string="Load custom labels and parameters from a JRXML file" col="4">
                 <group colspan="2">
-                    <field name="datafile"/>
+                    <field name="datafile" widget="binary" filename="name"/>
+                    <field name="save_as_attachment" />
+                    <field name="name" invisible="True" />
                 </group>
                 <footer>
-                    <button type="special" special="cancel" string="Cancel" icon="gtk-cancel"/>
-                    <button type="object" string="Next" name="import_file" icon="gtk-ok"/>
+                    <button special="cancel" string="Cancel" icon="fa-times-circle text-danger"/>
+                    <button type="object" string="Load" name="import_file" class="oe_highlight" icon="fa-check"/>
                 </footer>
             </form>
             </field>
@@ -29,4 +30,4 @@
         </record>
 
     </data>
-</openerp>
+</odoo>

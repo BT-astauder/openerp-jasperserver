@@ -93,8 +93,8 @@ class HTML2Text(HTMLParser):
 #             fpdf.write(content)
 #             fpdf.close()
 #             os.close(fd)
-#
-#
+
+
 def ParseXML(source):
     """
     Read the JasperServer Error code
@@ -117,7 +117,7 @@ def ParseXML(source):
 
 def ParseHTML(source):
     """
-    Read the HTML content return by an authentification error
+    Read the HTML content return by an authentication error
     """
     p = HTML2Text()
     p.feed(source)
@@ -213,5 +213,3 @@ if __name__ == '__main__':
 <u>La requête nécessite une authentification HTTP (Bad credentials).</u></p>
 <HR size="1" noshade="noshade"><h3>Apache Tomcat/5.5.20</h3>
 </body></html>""")
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

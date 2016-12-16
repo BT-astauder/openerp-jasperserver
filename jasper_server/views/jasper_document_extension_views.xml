@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="view_document_extension_tree" model="ir.ui.view">
+            <field name="name">Jasper Document Extension [list]</field>
+            <field name="model">jasper.document.extension</field>
+            <field name="arch" type="xml">
+                <tree string="Document extensions">
+                    <field name="extension"/>
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_document_extension_form" model="ir.ui.view">
+            <field name="name">Jasper Document Extension [form]</field>
+            <field name="model">jasper.document.extension</field>
+            <field name="arch" type="xml">
+                <form string="Documents extensions">
+                    <sheet>
+                        <div class="oe_title">
+                            <div class="oe_edit_only">
+                                <label for="name" />
+                            </div>
+                            <h1><field name="name" /></h1>
+                        </div>
+                        <group>
+                            <field name="extension"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="act_open_document_extension_view">
+            <field name="name">Jasper Document Extension</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">jasper.document.extension</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[]</field>
+            <field name="context">{}</field>
+        </record>
+
+        <menuitem id="menu_jasper_document_extension"
+                  parent="jasper_server.menu_jasper"
+                  sequence="20"
+                  action="act_open_document_extension_view"/>
+
+    </data>
+</odoo>
