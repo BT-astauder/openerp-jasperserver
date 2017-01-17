@@ -22,28 +22,24 @@
 #
 ##############################################################################
 
-# from openerp.osv import osv
-from openerp.osv import orm
-from openerp.osv import fields
-import base64
+from odoo import api, fields, models
+from base64 import decodestring
 
 
-class LoadFile(orm.TransientModel):
+class LoadFile(models.TransientModel):
     _name = 'load.jrxml.file'
     _description = 'Load file in the jasperdocument'
 
-    _columns = {
-        'datafile': fields.binary('File', required=True,
-                                  help='Select file to transfert'),
-    }
+    name = fields.Char('File Name')
+    datafile = fields.Binary('File', required=True,
+                             help='Select file to transfer')
+    save_as_attachment = fields.Boolean("Save file as attachment")
 
-    def import_file(self, cr, uid, ids, context=None):
-        
-        this = self.browse(cr, uid, ids[0], context=context)
-        content = base64.decodestring(this.datafile)
-        self.pool['jasper.document'].parse_jrxml(
-            cr, uid, context.get('active_ids'), content, context=context)
+    @api.multi
+    def import_file(self):
+
+        self.ensure_one()
+        content = decodestring(self.datafile)
+        self.env['jasper.document'].browse(self._context.get('active_ids')).parse_jrxml(content, self.save_as_attachment)
 
         return True
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

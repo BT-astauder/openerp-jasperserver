@@ -1,7 +1,7 @@
 # b-*- encoding: utf-8 -*-
 ##############################################################################
 #
-#    Copyright (c) 2013 brain-tec AG (http://www.brain-tec.ch) 
+#    Copyright (c) 2016 brain-tec AG (http://www.braintec-group.com)
 #    All Right Reserved
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -19,21 +19,28 @@
 #
 ##############################################################################
 
-from openerp.osv import osv, fields
+from odoo import api, fields, models
 
-class jasper_yaml_object(osv.osv):
-    """(NULL)"""
-    _name = 'jasper.yaml_object'
-        
-    _columns = {
-        'jasper_document_id': fields.many2one('jasper.document', string="Jasper Document"),
-        'name': fields.char('Name', size=50, required=True),
-        'model': fields.many2one('ir.model', string='Model', required=True),
-        'domain': fields.char('Domain', size=128),
-        'offset': fields.integer('Offset'),
-        'limit': fields.integer('Limit'),
-        'order': fields.char('Order', size=128),
-        'context': fields.char('Context',),
-        'user_id': fields.many2one('res.users', string='User'),
-        'fields': fields.text('Fields in YAML'),
-    }
+
+class JasperDocumentExtension(models.Model):
+    _name = 'jasper.document.extension'
+    _description = 'Jasper Document Extension'
+
+    name = fields.Char('Name', size=128, translate=True, required=True)
+    extension = fields.Char('Extension', size=10, required=True)
+
+    @api.multi
+    def name_get(self):
+        """ name_get() -> [(id, name), ...]
+
+        Returns a textual representation for the records in ``self``.
+        By default this is the value of the ``display_name`` field.
+
+        :return: list of pairs ``(id, text_repr)`` for each records
+        :rtype: list(tuple)
+        """
+        result = []
+        for record in self:
+            result.append((record.id, "%s (*.%s)" % (record.name, record.extension)))
+
+        return result

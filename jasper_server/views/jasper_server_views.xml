@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<openerp>
+<odoo>
     <data>
         ##############################################################################
         #
-        #    jasper_server module for OpenERP, 
+        #    jasper_server module for OpenERP,
         #    Copyright (C) 2009 SYLEAM Info Services ([http://www.syleam.fr/]) Christophe CHAUVET
         #
         #    This file is a part of jasper_server
@@ -24,18 +24,13 @@
         ##############################################################################
 
         <menuitem id="menu_jasper"
-            icon="STOCK_PRINT" 
-            sequence="50" 
-            name="Jasper Report" 
-            parent="base.menu_custom"/>
+                  sequence="50"
+                  name="Jasper Report"
+                  parent="base.menu_custom"/>
 
-        #
-        # Jasper Server configuration
-        #
         <record id="view_jasper_server_tree" model="ir.ui.view">
             <field name="name">jasper.server.tree</field>
             <field name="model">jasper.server</field>
-            <field name="priority" eval="8"/>
             <field name="arch" type="xml">
 
                 <tree string="Jasper Server">
@@ -48,16 +43,15 @@
                 </tree>
 
             </field>
-        </record> 
+        </record>
 
         <record id="view_jasper_server_form" model="ir.ui.view">
             <field name="name">jasper.server.form</field>
             <field name="model">jasper.server</field>
-            <field name="priority" eval="8"/>
             <field name="arch" type="xml">
-                <form string="Jasper Server" version="7.0">
+                <form string="Jasper Server">
                     <header>
-                        <button string="Check Auth" icon="gtk-ok" type="object" name="check_auth"/>
+                        <button string="Check Auth" icon="fa-check" type="object" name="check_auth"/>
                     </header>
                     <sheet>
                         <div class="oe_title">
@@ -75,7 +69,8 @@
                             </group>
                             <group colspan="2" col="2">
                                 <field name="user" required="1" placeholder="By default user is jasperadmin"/>
-                                <field name="pass" password="1" required="1" placeholder="By default the password is jasperadmin"/>
+                                <field name="password" password="1" required="1"
+                                       placeholder="By default the password is jasperadmin"/>
                             </group>
                         </group>
                         <group colspan="4" col="10">
@@ -102,10 +97,9 @@
         </record>
 
         <menuitem id="menu_jasper_server"
-            action="action_jasper_server"
-            icon="STOCK_PREFERENCES"
-            parent="menu_jasper"/>
+                  action="action_jasper_server"
+                  parent="menu_jasper"/>
 
 
     </data>
-</openerp>
+</odoo>

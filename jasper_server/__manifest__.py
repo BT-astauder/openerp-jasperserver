@@ -24,58 +24,68 @@
 
 {
     'name': 'JasperReport Server Interface',
-    'version': '6.3',
+    'version': '10.0.1.0',
     'category': 'Reporting',
     'sequence': 20,
     'complexity': "expert",
-    'description': """This module interface JasperReport Server with OpenERP
+    'description': """This module interface JasperReport Server with Odoo
+
 Features:
+
 - Document source must be in CSV, XML
 - Save document as attachment on object
 - Retrieve attachment if present
 - Launch multiple reports and merge in one printing action
-- Add additionnals parameters (ex from fields function)
+- Add additional parameters (ex from fields function)
 - Affect group on report
-- Use context to display or not the print button
-    (eg: in stock.picking separate per type)
-- Execute SQL query before and after treatement
+- Use context to display or not the print button (eg: in stock.picking separate per type)
 - Launch report based on SQL View
-- Add additional pages at the begining or at the end of the document
 
-This module required library to work properly
+This module requires some libraries to work properly
 
-# pip install httplib2 (>= 0.6.0)
-# pip install pyPdf (>= 1.13)
-# pip install python-dime
+- pip install httplib2 (>= 0.6.0)
+- pip install pyPdf (>= 1.13)
+- pip install python-dime
 
 
 In collaboration with Eric Vernichon (from Everlibre)
+
+Migrated and improved by Brain Tec.
 """,
     'author': 'SYLEAM',
     'website': 'http://www.syleam.fr',
     'images': ['images/accueil.png', 'images/palette.png',
                'images/document_form.png'],
+    'external_dependencies': {
+        'python': [
+            'httplib2',
+            'pyPdf',
+            'dime',
+            'lxml',
+            'HTMLParser',
+        ],
+    },
     'depends': [
         'base',
     ],
     'data': [
         'security/groups.xml',
         'security/ir.model.access.csv',
-        'data/jasper_document_extension.xml',
-        'wizard/wizard.xml',
-        'wizard/load_file_view.xml',
-        'obj_server_view.xml',
-        'obj_document_view.xml',
-        'jasper_yaml_object_view.xml',
 
+        'data/jasper_document_extension_data.xml',
+
+        'wizard/load_file_view.xml',
+
+        'views/jasper_document_extension_views.xml',
+        'views/jasper_document_label_views.xml',
+        'views/jasper_document_parameter_views.xml',
+        'views/jasper_server_views.xml',
+        'views/jasper_document_views.xml',
+        'views/jasper_yaml_object_views.xml',
     ],
     'demo': [
-        #'demo/jasper_document.xml',
     ],
-    'installable': False,
+    'installable': True,
     'auto_install': False,
-    'external_dependencies': {'python': ['httplib2', 'pyPdf', 'dime']},
     'application': True,
 }
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

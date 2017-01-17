@@ -24,10 +24,10 @@
 
 from lxml.etree import Element, tostring
 from pyPdf import PdfFileWriter, PdfFileReader
-from openerp.tools.misc import ustr
-import logging
+from odoo.tools.misc import ustr
+from logging import getLogger
 
-_logger = logging.getLogger('openerp.addons.jasper_server.report')
+_logger = getLogger('odoo.addons.jasper_server.report')
 
 # CStringIO is better than StringIO
 try:
@@ -219,5 +219,3 @@ def merge_pdf(lpdf):
     # We store the content of the merge into a file object
     ret.write(fo_pdf)
     return fo_pdf
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

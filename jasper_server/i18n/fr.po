@@ -302,7 +302,7 @@ msgstr "Extensions des documents"
 #. module: jasper_server
 #: code:addons/jasper_server/obj_server.py:178
 #, python-format
-msgid "Error, JasperServer authentification failed for user %s/%s"
+msgid "Error, JasperServer authentication failed for user %s/%s"
 msgstr ""
 "Erreur, l'authentification JasperServer à échoué pour l'utilisateur %s/%s"
 
@@ -650,7 +650,7 @@ msgstr "Vérifier le rapport"
 
 #. module: jasper_server
 #: help:jasper.server,status:0
-msgid "Check the registered and authentification status"
+msgid "Check the registered and authentication status"
 msgstr "Vérifie l'enregistrement et l'état de l'authentification"
 
 #. module: jasper_server
@@ -660,7 +660,7 @@ msgstr "ir.actions.report.xml"
 
 #. module: jasper_server
 #: help:load.jrxml.file,datafile:0
-msgid "Select file to transfert"
+msgid "Select file to transfer"
 msgstr "Sélectionner un fichier a transférer"
 
 #. module: jasper_server
@@ -743,8 +743,8 @@ msgstr ""
 "Message: \"%s\""
 
 #. module: jasper_server
-#: help:jasper.server,pass:0
-msgid "Enter the password for the user, by defaul is jasperadmin"
+#: help:jasper.server,password:0
+msgid "Enter the password for the user, by default is jasperadmin"
 msgstr "Entrer le mot de passe pour l'utilisateur, par défaut c'est jasperadmin"
 
 #. module: jasper_server
@@ -886,7 +886,7 @@ msgstr "Code"
 #. module: jasper_server
 #: code:addons/jasper_server/obj_document.py:404
 #, python-format
-msgid "Error, Authentification failed for %s/%s"
+msgid "Error, Authentication failed for %s/%s"
 msgstr "Erreur, l'authentification à échoué pour %s/%s"
 
 #. module: jasper_server
@@ -1076,7 +1076,7 @@ msgid "\"check_print\" function not found in \"%s\" object"
 msgstr "La fonction \"check_print\" non trouvé sur l'objet \"%s\""
 
 #. module: jasper_server
-#: field:jasper.server,pass:0
+#: field:jasper.server,password:0
 msgid "Password"
 msgstr "Mot de passe"
 
