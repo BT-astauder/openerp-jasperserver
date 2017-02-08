@@ -202,7 +202,7 @@ class JasperServer(orm.Model):
                 type = mod_fields[f]['type']
                 value = mod[f]
                 e = Element(field, label='%s' % self.format_element(name))
-                if type in ('char', 'text', 'selection'):
+                if type in ('char', 'text', 'selection', 'html'):
                     e.text = value and unicode(value) or ''
                 elif type == 'integer':
                     e .text = value and str(value) or '0'
@@ -349,7 +349,7 @@ class JasperServer(orm.Model):
 
     def _format_element(self, element, field_type, field_value):
 
-        if field_type in ('char', 'text', 'selection'):
+        if field_type in ('char', 'text', 'selection', 'html'):
             return field_value and unicode(field_value) or ''
         elif field_type == 'integer':
             return field_value and str(field_value) or '0'
