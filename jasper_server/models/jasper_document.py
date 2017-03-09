@@ -142,8 +142,6 @@ class JasperDocument(models.Model):
                                                  string='Report to generate RML')
     error_text = fields.Text('Errors', readonly=True)
 
-    _sql_constraints = [('unique_number', 'unique(report_link_name)', 'The Report Link Name must be unique.')]
-
     @api.multi
     def make_action(self):
         """
