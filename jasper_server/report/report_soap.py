@@ -648,6 +648,9 @@ class Report(object):
                     except TypeError as e:
                         error_title = 'TypeError'
                         error_message = e.message
+                    except JasperException as e:
+                        error_title = 'JasperException'
+                        error_message = e.message
                     except Exception as e:
 
                         type_, value_, traceback_ = sys.exc_info()
