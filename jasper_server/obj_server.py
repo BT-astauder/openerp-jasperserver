@@ -39,6 +39,13 @@ from openerp.osv.orm import browse_null
 from lxml.etree import Element, tostring
 from openerp.addons.jasper_server.report.report_exception import EvalError
 
+from openerp.osv.fields import float as float_field, function as function_field, datetime as datetime_field
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
+from datetime import datetime
+
+def get_date_length(date_format=DEFAULT_SERVER_DATE_FORMAT):
+    return len((datetime.now()).strftime(date_format))
+
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -334,6 +341,7 @@ class JasperServer(orm.Model):
                 else:
                     # set element content
                     xmlField.text = self._format_element(xmlField, object._model._fields[field].type, object[fieldname])
+                    #xmlField.text = self._format_and_translate_element(cr, uid, xmlField, object._model._fields[field].type, object[fieldname], context=context)
 
             else:
                 xmlField = Element(prefix + field)
@@ -342,10 +350,117 @@ class JasperServer(orm.Model):
                 xmlField.text = ''
                 if object:
                     xmlField.text = self._format_element(xmlField, object._model._fields[field].type, object[field])
+                    #xmlField.text = self._format_and_translate_element(cr, uid, xmlField, object._model._fields[field].type, object[field], context=context)
 
 
             root.append(xmlField)
         return
+
+    def get_digits(self, obj=None, f=None, dp=None):
+        d = DEFAULT_DIGITS = 2
+        if dp:
+            decimal_precision_obj = self.pool['decimal.precision']
+            d = decimal_precision_obj.precision_get(self.cr, self.uid, dp)
+        elif obj and f:
+            res_digits = getattr(obj._columns[f], 'digits', lambda x: ((16, DEFAULT_DIGITS)))
+            if isinstance(res_digits, tuple):
+                d = res_digits[1]
+            else:
+                d = res_digits(self.cr)[1]
+        elif (hasattr(obj, '_field') and\
+                isinstance(obj._field, (float_field, function_field)) and\
+                obj._field.digits):
+                d = obj._field.digits[1]
+                if not d and d is not 0:
+                    d = DEFAULT_DIGITS
+        return d
+
+    def formatLang(self, cr, uid, value, digits=None, date=False, date_time=False, grouping=True, monetary=False, dp=False, currency_obj=False, language='en_US'):
+        """
+            Assuming 'Account' decimal.precision=3:
+                formatLang(value) -> digits=2 (default)
+                formatLang(value, digits=4) -> digits=4
+                formatLang(value, dp='Account') -> digits=3
+                formatLang(value, digits=5, dp='Account') -> digits=5
+        """
+        if digits is None:
+            if dp:
+                digits = self.get_digits(dp=dp)
+            else:
+                digits = self.get_digits(value)
+
+        if isinstance(value, (str, unicode)) and not value:
+            return ''
+
+        lang_pool = self.pool.get('res.lang')
+        lang_id = lang_pool.search(cr, uid, [('code', '=', language)])
+        lang_obj = lang_pool.browse(cr, uid, lang_id)
+        lang_dict = {}
+        lang_dict.update({'lang_obj': lang_obj, 'date_format': lang_obj.date_format, 'time_format': lang_obj.time_format})
+
+        if date or date_time:
+            if not value:
+                return ''
+
+            date_format = lang_dict['date_format']
+            parse_format = DEFAULT_SERVER_DATE_FORMAT
+            if date_time:
+                value = value.split('.')[0]
+                date_format = date_format + " " + lang_dict['time_format']
+                parse_format = DEFAULT_SERVER_DATETIME_FORMAT
+            if isinstance(value, basestring):
+                # FIXME: the trimming is probably unreliable if format includes day/month names
+                #        and those would need to be translated anyway.
+                date = datetime.strptime(value[:get_date_length(parse_format)], parse_format)
+            elif isinstance(value, time.struct_time):
+                date = datetime(*value[:6])
+            else:
+                date = datetime(*value.timetuple()[:6])
+            if date_time:
+                # Convert datetime values to the expected client/context timezone
+                date = datetime_field.context_timestamp(self.cr, self.uid,
+                                                        timestamp=date,
+                                                        context=self.localcontext)
+            return date.strftime(date_format.encode('utf-8'))
+
+        res = lang_dict['lang_obj'].format('%.' + str(digits) + 'f', value, grouping=grouping, monetary=monetary)
+        if currency_obj:
+            if currency_obj.position == 'after':
+                res = u'%s\N{NO-BREAK SPACE}%s' % (res, currency_obj.symbol)
+            elif currency_obj and currency_obj.position == 'before':
+                res = u'%s\N{NO-BREAK SPACE}%s' % (currency_obj.symbol, res)
+        return res
+
+    def _format_and_translate_element(self, cr, uid, element, field_type, field_value, context=None):
+
+        language = context.get('lang', False)
+
+        if field_type in ('char', 'text', 'selection', 'html'):
+            return field_value and unicode(field_value) or ''
+        elif field_type == 'integer':
+            return field_value and str(field_value) or '0'
+        elif field_type == 'float':
+            # Float is already given with the separators and format of the language
+            value = field_value or 0.0
+            return self.formatLang(cr, uid, value, grouping=True, language=language)
+        elif field_type == 'date':
+            # Date is already given with the separators and format of the language
+            return self.formatLang(cr, uid, field_value, date=True, language=language)
+        elif field_type == 'datetime':
+            # Datetime is already given with the separators and format of the language
+            return self.formatLang(cr, uid, field_value, datetime=True, language=language)
+        elif field_type == 'boolean':
+            return str(field_value)
+        elif field_type == 'many2one':
+            raise EvalError(_('Many2One'), _('You cannot use many2one directly.\n\nDefine subelement for: "%s"') % str(element.tag))
+        elif field_type in ('binary', 'reference'):
+            if field_value:
+                return str(field_value)
+            else:
+                return ''
+        else:
+            log_error('OUPS un oubli %s: %s(%s)' % (field_type, element, field_value))
+
 
     def _format_element(self, element, field_type, field_value):
 
