@@ -26,7 +26,7 @@ class JasperYamlObject(models.Model):
     """(NULL)"""
     _name = 'jasper.yaml_object'
 
-    jasper_document_id = fields.Many2one('jasper.document', string="Jasper Document")
+    jasper_document_id = fields.Many2one('jasper.document', string="Jasper Document", ondelete='cascade')
     name = fields.Char('Name', size=50, required=True)
     model = fields.Many2one('ir.model', string='Model', required=True)
     domain = fields.Char('Domain', size=128)
