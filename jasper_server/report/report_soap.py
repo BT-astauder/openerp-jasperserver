@@ -402,9 +402,46 @@ class Report(object):
                     # Date format is changed because JasperSoft does not accept format based on %. It needs usual format for dates
                     date_format = date_format.replace("%d",'dd')
                     date_format = date_format.replace("%m",'MM')
+                    date_format = date_format.replace("%b", 'MMM')
+                    date_format = date_format.replace("%B", 'MMMMM')
+                    date_format = date_format.replace("%y", 'yy')
                     date_format = date_format.replace("%Y",'YYYY')
+                    date_format = date_format.replace("%a", 'EE')
+                    date_format = date_format.replace("%A", 'E')
+                    date_format = date_format.replace("%W", 'ww')
+                    # This will create parameter "OERP_DATE_FORMAT" to be used in Jasper Report. Don't define it in parameters of Jasper Document
                     d_par['date_format'] = date_format
-            
+
+                    # This will create parameters "OERP_DECIMAL_SEPARATOR" and "OERP_THOUSAND_SEPARATOR" to be used in Jasper Report. Don't define it in parameters of Jasper Document
+                    number_format = self.pool.get("res.lang").browse(self.cr, self.uid, my_language_id)
+                    decimal_separator = str(number_format[0].decimal_point)
+                    thousands_separator = str(number_format[0].thousands_sep)
+                    # In case separator is ' ' as it will go to Jasper through XML we need to formulate it as html and use the field in Jasper with markup html
+                    if thousands_separator == ' ':
+                        thousands_separator = '&#032;'
+
+                    d_par['decimal_separator'] = decimal_separator
+                    d_par['thousand_separator'] = thousands_separator
+
+                    grouping = eval(number_format[0].grouping)
+                    whole_number_part_format = ''
+                    cont = 0
+                    for item in grouping:
+                        if item == -1:
+                            whole_number_part_format = '#,' + whole_number_part_format
+                        else:
+                            if cont== 0:
+                                whole_number_part_format = '#' * (item - 1) + '0,' + whole_number_part_format
+                            else:
+                                whole_number_part_format = '#' * (item) + ',' + whole_number_part_format
+                        cont = cont+1
+                    whole_number_part_format = whole_number_part_format[:-1]
+                    # Adding 2 decimals. This should be automated according to number settings.
+                    # However as this is a general parameter for all numbers we use two decimals.
+                    # Otherwise we might need a different parameter for each number, as number of decimals is defined there with digits
+                    whole_number_part_format = whole_number_part_format + '.00'
+                    d_par['whole_number_part_format'] = whole_number_part_format
+
             # If YAML we must compose it
             if self.attrs['params'][2] == 'yaml':
                 #Using language coming from the jasper document if exists 
