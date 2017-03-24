@@ -544,6 +544,7 @@ class Report(object):
         context = self.env.context.copy()
         # The following line is required in v10 to get discount lines in the Reports
         context['custom_search_line_discount'] = True
+        self.env = self.env(context=context)
 
         ids = self.ids
         log_debug('DATA:')
