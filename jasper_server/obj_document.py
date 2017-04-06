@@ -126,8 +126,6 @@ class jasper_document(orm.Model):
         'error_text': fields.text('Errors') 
     }
 
-    _sql_constraints = [('unique_number', 'unique(report_link_name)','The Report Link Name must be unique.')]
-
     _defaults = {
         'format_choice': 'mono',
         'mode': 'sql',
