@@ -163,15 +163,12 @@ class Report(object):
         if aux_object >= 0 or aux_time >= 0:
             try:
                 if aux_object >= 0:
-                    aux_input = attachment[attachment.find('object'):]
-                    aux_input = aux_input[0:aux_input.find('_')]
-                    aux_object_eval = eval(aux_input, {'object': cur_obj})
-                    attachment = attachment.replace(aux_input, aux_object_eval)
+                    aux_object_eval = eval(attachment, {'object': cur_obj})
+                    attachment = attachment.replace(attachment, aux_object_eval)
                 if aux_time >= 0:
-                    aux_input = attachment[attachment.find('time'):]
-                    aux_input = aux_input[0:aux_input.find('_')]
-                    aux_time_eval = eval(aux_input, {'time': time})
-                    attachment = attachment.replace(aux_input, aux_time_eval)
+                    aux_time_eval = eval(attachment, {'time': time})
+                    attachment = attachment.replace(attachment, aux_time_eval)
+                attachment = attachment.replace(' ', '_')
             except SyntaxError, e:
                 _logger.warning('Error %s' % str(e))
                 raise EvalError(_('Attachment Error'),
