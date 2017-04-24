@@ -646,6 +646,9 @@ class Report(object):
                     except TypeError as e:
                         error_title = 'TypeError'
                         error_message = e.message
+                    except UserError as e:
+                        error_title = 'UserError'
+                        error_message = 'name: "%s"; message: "%s"' % (e.name, e.message)
                     except JasperException as e:
                         error_title = 'JasperException'
                         error_message = e.message

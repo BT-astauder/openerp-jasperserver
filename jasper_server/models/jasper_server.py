@@ -255,9 +255,9 @@ class JasperServer(models.Model):
                 if 'name' in object._fields and object.name:
                     xmlField.set("name", object.name)
                 elif object._rec_name != None:
-                    rec_name_value = object.read([object._rec_name])[object._rec_name]
+                    rec_name_value = object[object._rec_name]
                     if rec_name_value:
-                        xmlField.set("name", rec_name_value)
+                        xmlField.set("name", str(rec_name_value))
                     else:
                         xmlField.set("name", str(object.id))
                 else:
