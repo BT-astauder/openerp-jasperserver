@@ -366,7 +366,7 @@ class Report(object):
             d_par.update({
                 'company_name': cny.name,
                 'company_logo': cny.name.encode('ascii',
-                                                'ignore').replace(' ', '_'),
+                                                'ignore').replace(' ', '_') if cny.name else '',
                 'company_header1': cny.rml_header1 or '',
                 'company_footer1': cny.rml_footer or '',
                 'company_footer2': '',
