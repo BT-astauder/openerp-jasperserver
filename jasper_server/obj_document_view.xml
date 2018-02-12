@@ -227,6 +227,7 @@
                                     <field name="attachment_use"/>
                                     <field name="debug" attr="{'invisible': [('mode','!=','yaml'),('mode','!=','rml')]"/>
                                     <field name="any_database"/>
+                                    <field name="add_super_container"/>
                                 </group>
                             </page>
                             <page string="Groups">

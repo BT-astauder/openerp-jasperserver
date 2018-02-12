@@ -123,7 +123,8 @@ class jasper_document(orm.Model):
         # RML fields
         'rml_ir_actions_report_xml_id': fields.many2one('ir.actions.report.xml', string='Report to generate RML'),
         'rml_ir_actions_report_xml_name': fields.related('rml_ir_actions_report_xml_id', 'report_name', type="char", string='Report to generate RML'),
-        'error_text': fields.text('Errors') 
+        'error_text': fields.text('Errors'),
+        'add_super_container': fields.boolean('Add super container?', help="Use it to create a single report in which different objects act as lines, instead of merging a different report for each object (usual use case).")
     }
 
     _sql_constraints = [('unique_number', 'unique(report_link_name)','The Report Link Name must be unique.')]

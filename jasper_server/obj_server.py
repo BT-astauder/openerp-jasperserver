@@ -36,7 +36,7 @@ import ast
 
 from openerp.osv.orm import browse_null
 
-from lxml.etree import Element, tostring
+from lxml.etree import Element, SubElement, tostring
 from openerp.addons.jasper_server.report.report_exception import EvalError
 
 from openerp.osv.fields import float as float_field, function as function_field, datetime as datetime_field
@@ -282,6 +282,14 @@ class JasperServer(orm.Model):
             xmlObject = Element('object')        
             xmlObject.set("name", yaml_object.name)
             xmlObject.set("model", yaml_object.model.name)
+
+            # If add_super_container, we have to add a main container to gather other child containers, one per item.
+            # This will allow to create a single report iterating over items as lines, instead of a different report per item
+            if jasper_document.add_super_container:
+                parent = SubElement(xmlObject, 'container')
+            else:
+                parent = xmlObject
+
             for object in model_obj.browse(cr, user_id, model_ids, ctx):
                 xmlField = Element('container')
 
@@ -305,7 +313,10 @@ class JasperServer(orm.Model):
                     self.generate_from_yaml(cr, user_id, xmlField, object, yaml.load(yaml_object.fields), context=ctx)
                 except:
                     raise
-                xmlObject.append(xmlField)
+                parent.append(xmlField)
+
+            if jasper_document.add_super_container:
+                xmlObject.append(parent)
 
             root.append(xmlObject)
 
