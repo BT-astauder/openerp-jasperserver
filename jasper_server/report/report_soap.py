@@ -237,7 +237,7 @@ class Report(object):
             raise EvalError(_('Language Error'), _('Unknown error when evaluate language\nMessage: "%s"') % str(e))  # noqa
 
     def _jasper_execute(self, ex, current_document, js_conf, pdf_list,
-                        reload=False, ids=None, context=None):
+                        reload=False, ids=None, merged_xml=None, context=None):
         """
         After retrieve datas to launch report, execute it and
         return the content
@@ -444,17 +444,24 @@ class Report(object):
 
             # If YAML we must compose it
             if self.attrs['params'][2] == 'yaml':
-                #Using language coming from the jasper document if exists 
-                my_context = context.copy()
-                my_context['lang'] = language
-                try:
-                    d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
-                except:
-                    raise
-                
-                if current_document.debug:
-                    return (d_xml, 1)
-                d_par['xml_data'] = d_xml
+                # If a merged xml is received as parameter (case of add_super_container)
+                # there is no need to compute it. We just use it ti generate the report
+                if merged_xml:
+                    d_par['xml_data'] = merged_xml
+                else:
+                    #Using language coming from the jasper document if exists
+                    my_context = context.copy()
+                    my_context['lang'] = language
+                    try:
+                        d_xml = js_obj.generatorYAML(self.cr, self.uid, current_document, cur_obj, cny, user, context=my_context)
+                    except:
+                        raise
+
+                    # If add_super_container, even when it's not debug mode, XML is returned
+                    # to create a merged XML that will be the input to create the PDF
+                    if current_document.debug or current_document.add_super_container:
+                        return (d_xml, 1)
+                    d_par['xml_data'] = d_xml
 
             # If RML, call original report
             if self.attrs['params'][2] == 'rml':
@@ -653,13 +660,13 @@ class Report(object):
                             self.path = compose_path('/openerp/bases/%s') % ( d.report_unit)
                         else:
                             self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, [ex], context=context)
+                        (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, [ex], False, context=context)
                         one_check[d.id] = True
                 else:
                     if doc.only_one and one_check.get(doc.id, False):
                         continue
                     try:
-                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], context=context)
+                        (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], False, context=context)
                         all_xml.append(content)
                     except Exception as e:
 
@@ -729,12 +736,32 @@ class Report(object):
                         self.path = compose_path('/openerp/bases/%s') % (d.report_unit)
                     else:
                         self.path = compose_path('/openerp/bases/%s/%s') % (self.cr.dbname, d.report_unit)
-                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, [ex], context=context)
+                    (content, duplicate) = self._jasper_execute(ex, d, js, pdf_list, reload, [ex], False, context=context)
                     one_check[d.id] = True
             else:
                 if not (doc.only_one and one_check.get(doc.id, False)):
-                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], context=context)
+                    (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], False, context=context)
                     one_check[doc.id] = True
+
+        # If add_super_container and no debug mode (output is PDF)
+        # we have to merge all xml returned into just one, and launch the creation of the PDF
+        # so that we avoid having one page per each item, but all items in same page
+        if doc.add_super_container and self.outputFormat.upper() == 'PDF':
+            self.obj = external_pdf(content, self.outputFormat)
+            result_xml = "<data></data>"
+            for item in all_xml:
+                one = et.fromstring(result_xml)
+                other = et.fromstring(item)
+                # Merging two XML strings that were converted to XML Elements
+                self.combine_element(one, other)
+
+                # Updating content of self.obj, that is in the end what we return
+                self.obj.content = et.tostring(one)
+                # Update resulting XML string for next iteration
+                result_xml = self.obj.content
+
+            (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], result_xml, context=context)
+
 
         # If format is not PDF, we return it directly
         # ONLY PDF CAN BE MERGE!
