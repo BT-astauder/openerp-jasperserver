@@ -31,6 +31,7 @@ import openerp
 import time
 import os
 import jasperlib
+import re
 
 from osv.orm import browse_null
 
@@ -82,7 +83,7 @@ class JasperServer(orm.Model):
         """
         cr.execute("""show server_version""")
         pg_version = cr.fetchone()[0].split('.')
-        pg_version = tuple([int(x) for x in pg_version])
+        pg_version = tuple([int(re.sub('[^0-9]', '', x)) for x in pg_version])
 
         if pg_version >= (8, 3, 0):
             cr.execute("""SELECT count(*)
