@@ -61,4 +61,4 @@ class IrActionReportXmlExt(models.Model):
         if new_report:
             return new_report
         else:
-            return super(IrActionReportXmlExt, self)._lookup_report(cr, name)
+            return super(IrActionReportXmlExt, self)._lookup_report(name)
