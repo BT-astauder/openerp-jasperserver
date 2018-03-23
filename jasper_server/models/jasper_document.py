@@ -150,7 +150,9 @@ class JasperDocument(models.Model):
         """
         self.ensure_one()
 
-        report_name = 'jasper.report_%s' % (self.name.lower().replace(' ', '_'),)
+        # Ignoring lang for creating the report name
+        name_no_lang = self.with_context({}).name
+        report_name = 'jasper.report_%s' % (name_no_lang.lower().replace(' ', '_'),)
         vals = {
             'name': self.name,
             'report_name': report_name,
