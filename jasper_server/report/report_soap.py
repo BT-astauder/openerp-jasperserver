@@ -405,7 +405,7 @@ class Report(object):
                     date_format = date_format.replace("%b", 'MMM')
                     date_format = date_format.replace("%B", 'MMMMM')
                     date_format = date_format.replace("%y", 'yy')
-                    date_format = date_format.replace("%Y",'YYYY')
+                    date_format = date_format.replace("%Y",'yyyy')
                     date_format = date_format.replace("%a", 'EE')
                     date_format = date_format.replace("%A", 'E')
                     date_format = date_format.replace("%W", 'ww')
