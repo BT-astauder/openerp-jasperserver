@@ -404,7 +404,7 @@ class Report(object):
                     # It needs usual format for dates
                     date_format = date_format.replace("%d",'dd')
                     date_format = date_format.replace("%m",'MM')
-                    date_format = date_format.replace("%Y",'YYYY')
+                    date_format = date_format.replace("%Y",'yyyy')
                     d_par['date_format'] = date_format
 
             # If YAML we must compose it
