@@ -743,10 +743,13 @@ class Report(object):
                     (content, duplicate) = self._jasper_execute(ex, doc, js, pdf_list, reload, [ex], False, context=context)
                     one_check[doc.id] = True
 
-        # If add_super_container and no debug mode (output is PDF)
-        # we have to merge all xml returned into just one, and launch the creation of the PDF
-        # so that we avoid having one page per each item, but all items in same page
-        if doc.add_super_container and self.outputFormat.upper() == 'PDF':
+        # If add_super_container and no debug mode we have to merge all xml
+        # returned into just one, and launch the creation of the report
+        # so that we avoid having one page per each item, but all items in
+        # same page
+        if doc.add_super_container and \
+                (self.outputFormat.upper() == 'PDF' or
+                 self.outputFormat.upper() == 'XLS'):
             self.obj = external_pdf(content, self.outputFormat)
             result_xml = "<data></data>"
             for item in all_xml:
